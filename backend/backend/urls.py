@@ -17,11 +17,14 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from accesos.views import LoginView, RegisterView
+from usuarios.views import LoginView, RegisterView
+from animales.views import ObtenerAnimales, RegistrarAnimales
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("login/", LoginView.as_view(), name="login"),
     path("register/", RegisterView.as_view(), name="register"),
+    path("animales/", ObtenerAnimales.as_view(), name="animales"),
+    path("registro-animales/", RegistrarAnimales.as_view(), name="registro_animales"),
 
 ]

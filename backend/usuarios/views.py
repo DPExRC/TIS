@@ -5,8 +5,6 @@ from rest_framework import status
 from firebase_config import db
 
 
-
-
 class LoginView(APIView):
     def post(self, request):
         auth_header = request.headers.get("Authorization")
@@ -41,13 +39,6 @@ class RegisterView(APIView):
 
         try:
             user = auth.create_user(email=email, password=password, display_name=display_name)
-
-            db.collection("users").document(user.uid).set({
-                "uid": user.uid,
-                "email": email,
-                "display_name": display_name,
-                "created_at": firestore.SERVER_TIMESTAMP
-            })
 
             return Response({"message": "Usuario registrado exitosamente", "uid": user.uid}, status=status.HTTP_201_CREATED)
         except Exception as e:

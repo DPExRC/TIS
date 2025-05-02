@@ -21,7 +21,7 @@
 
 body {
   margin: 0;
-  display: flex;
+  display:grid;
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
@@ -38,6 +38,7 @@ h1 {
   :root {
     color: #213547;
     background-color: #ffffff;
+    
   }
   a:hover {
     color: #ffb774;
