@@ -10,7 +10,7 @@ const CoutingPresenceForm = () => {
                 <label className="block text-sm font-medium text-gray-700">Fecha de inicio</label>
                 <input
                   type="date"
-                  value="2025-04-19"
+                  value="2025-05-19"
                   readOnly
                   className="mt-1 block w-full border rounded-md px-3 py-2 bg-gray-100 text-black"
                 />
@@ -20,7 +20,7 @@ const CoutingPresenceForm = () => {
                 <label className="block text-sm font-medium text-gray-700">Fecha de término</label>
                 <input
                   type="date"
-                  value="2025-04-19"
+                  value="2025-05-19"
                   readOnly
                   className="mt-1 block w-full border rounded-md px-3 py-2 bg-gray-100 text-black"
                 />
@@ -50,7 +50,7 @@ const CoutingPresenceForm = () => {
                 <label className="block text-sm font-medium text-gray-700">Lugar</label>
                 <input
                   type="text"
-                  value="Zona Norte - Establo 3"
+                  value="Zona Norte"
                   readOnly
                   className="mt-1 block w-full border rounded-md px-3 py-2 bg-gray-100 text-black"
                 />

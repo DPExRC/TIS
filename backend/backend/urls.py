@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path
 
 from usuarios.views import LoginView, RegisterView
-from animales.views import ObtenerAnimales, RegistrarAnimales
+from animales.views import ObtenerAnimales, RegistrarAnimales, CantidadAnimales, RegistrarExistenciaAnimales
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -26,5 +26,8 @@ urlpatterns = [
     path("register/", RegisterView.as_view(), name="register"),
     path("animales/", ObtenerAnimales.as_view(), name="animales"),
     path("registro-animales/", RegistrarAnimales.as_view(), name="registro_animales"),
+    path("cantidad-animales/", CantidadAnimales.as_view(), name="cantidad_animales"),
+    path("registrar-existencia/", RegistrarExistenciaAnimales.as_view(), name="registrar_existencia"),
+
 
 ]

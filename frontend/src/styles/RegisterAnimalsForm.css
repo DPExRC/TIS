@@ -1,0 +1,14 @@
+label {
+  display: block;           /* para que ocupe toda la línea */
+  font-size: 0.875rem;      /* tamaño de texto pequeño */
+  font-weight: 500;         /* peso de fuente medio */
+  margin-bottom: 0.25rem;   /* margen inferior de 4px */
+  color: black;
+}
+
+select option {
+  color: black;
+  background-color: transparent;
+  font-size: 14px;
+}
+

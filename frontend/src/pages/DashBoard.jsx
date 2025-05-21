@@ -1,76 +1,185 @@
-import { Card, CardContent } from "../components/Card";
-import { Button } from "../components/Button";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
 import Navbar from "../components/NavBar";
+import { ResponsiveContainer } from "recharts";
 
-const data = [
-  { name: "Vacas", presentes: 120, faltantes: 5 },
-  { name: "Chivos", presentes: 80, faltantes: 2 },
-  { name: "Pollos", presentes: 150, faltantes: 12 },
-];
+import { Card, CardContent } from "../components/Card";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "../components/Select";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  BarChart,
+  Bar,
+  Legend,
+} from "recharts";
 
-export default function Dashboard() {
-  const [fecha, setFecha] = useState("2025-04-16");
+const Dashboard = () => {
+  const [speciesOptions, setSpeciesOptions] = useState({});
+  const [selectedSpecies, setSelectedSpecies] = useState("");
+  const [selectedAnimal, setSelectedAnimal] = useState("");
+
+  const dataLine = [
+    { name: "1", CPM: 2500, CPP: 2800 },
+    { name: "2", CPM: 2200, CPP: 3000 },
+    { name: "3", CPM: 2600, CPP: 3700 },
+    { name: "4", CPM: 2100, CPP: 2900 },
+    { name: "5", CPM: 2400, CPP: 4100 },
+  ];
+
+  const dataBar = [
+    { name: "Norte", Clicks: 6, Purchases: 8, Signups: 5, Forms: 3, Trials: 2 },
+    { name: "Centro", Clicks: 8, Purchases: 9, Signups: 7, Forms: 6, Trials: 5 },
+    { name: "Sur", Clicks: 9, Purchases: 10, Signups: 8, Forms: 7, Trials: 6 },
+  ];
+
+  useEffect(() => {
+    axios.get("http://127.0.0.1:8000/animales/")
+      .then((res) => {
+        if (res.data?.animales) {
+          setSpeciesOptions(res.data.animales);
+        }
+      })
+      .catch((err) => console.error("Error al obtener animales:", err));
+  }, []);
+
+  const animalOptions = selectedSpecies && speciesOptions[selectedSpecies]
+    ? Object.keys(speciesOptions[selectedSpecies]).filter(key => key !== "registro")
+    : [];
 
   return (
     <div>
-      <Navbar/>
-      <div className="p-6 grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-        <Card className="col-span-1 xl:col-span-3">
-          <CardContent className="p-4">
-            <div className="flex justify-between items-center mb-4 text-black">
-              <h2 className="text-xl font-bold">Resumen General</h2>
-              <input
-                type="date"
-                value={fecha}
-                onChange={(e) => setFecha(e.target.value)}
-                className="border p-2 rounded"
-              />
+      <Navbar />
+      <div className="p-6 min-w-[1024px]">
+        <div className="p-6 grid gap-6">
+
+
+          
+          {/* Tarjetas de resumen */}
+          <div className="grid grid-cols-4 gap-4 text-black">
+            <Card>
+              <CardContent className="p-4 ">
+                <p>Ganado Total</p>
+                <h2 className="text-2xl font-bold">100</h2>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <p>Ganado Faltante</p>
+                <h2 className="text-2xl font-bold">2</h2>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <p>Hora Registro</p>
+                <h2 className="text-2xl font-bold">16:00</h2>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <p>Personal</p>
+                <h2 className="text-2xl font-bold">Juanito Perez</h2>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Select Dinamicos */}
+          <div className="flex gap-4">
+            {/* Especie */}
+            <div className="text-xl bg-white max-w-[160px] rounded-lg">
+              <Select
+                value={selectedSpecies}
+                onValueChange={(value) => {
+                  setSelectedSpecies(value);
+                  setSelectedAnimal("");
+                }}
+              >
+                <SelectTrigger className="w-44 h-12 text-base text-black px-4 py-2">
+                  <SelectValue placeholder="Especie" />
+                </SelectTrigger>
+                <SelectContent className="text-sm text-black">
+                  {Object.keys(speciesOptions).map((specie) => (
+                    <SelectItem key={specie} value={specie}>
+                      {specie}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={data}>
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="presentes" fill="#4ade80" name="Presentes" />
-                <Bar dataKey="faltantes" fill="#f87171" name="Faltantes" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <h3 className="text-lg font-semibold mb-2">Alertas Recientes</h3>
-            <ul className="space-y-1 text-black">
-              <li>🟥 12 pollos faltantes - Zona Sur</li>
-              <li>🟥 5 vacas no registradas - Zona Este</li>
-              <li>🟨 2 chivos recontados manualmente</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <h3 className="text-lg font-semibold mb-2 text-black">Accesos Rápidos</h3>
-            <div className="grid grid-cols-2 gap-2">
-              <Button>Registrar Animales</Button>
-              <Button>Conteo Diario</Button>
-              <Button>Ver Reportes</Button>
-              <Button>Configurar Alertas</Button>
+            {/* Animal */}
+            <div className="text-xl bg-white max-w-[160px] rounded-lg">
+              <Select
+                value={selectedAnimal}
+                onValueChange={setSelectedAnimal}
+                disabled={!selectedSpecies}
+              >
+                <SelectTrigger className="w-44 h-12 text-base text-black px-4 py-2">
+                  <SelectValue placeholder="Animal" />
+                </SelectTrigger>
+                <SelectContent className="text-sm text-black">
+                  {animalOptions.map((animal) => (
+                    <SelectItem key={animal} value={animal}>
+                      {animal}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card>
-          <CardContent className="p-4 text-black">
-            <h3 className="text-lg font-semibold mb-2">Resumen de Registro</h3>
-            <p className="text-sm">Último registro: 2025-04-15 18:40</p>
-            <p className="text-sm">Registrador: Juan Pérez</p>
-          </CardContent>
-        </Card>
+
+          {/* Gráfica de barras */}
+          <Card className="w-full">
+            <CardContent className="p-4">
+              <h3 className="font-bold mb-2 text-black">Existencia</h3>
+              <div className="w-full h-[250px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={dataBar}>
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="Clicks" fill="#8884d8" />
+                    <Bar dataKey="Purchases" fill="#ffc658" />
+                    <Bar dataKey="Signups" fill="#82ca9d" />
+                    <Bar dataKey="Forms" fill="#ff8042" />
+                    <Bar dataKey="Trials" fill="#a4de6c" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Gráfica de líneas */}
+          <Card className="w-full">
+            <CardContent className="p-4">
+              <h3 className="font-bold mb-2 text-black">Total</h3>
+              <div className="w-full h-[250px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={dataLine}>
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="CPM" stroke="#8884d8" />
+                    <Line type="monotone" dataKey="CPP" stroke="#82ca9d" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
-}
+};
+
+export default Dashboard;

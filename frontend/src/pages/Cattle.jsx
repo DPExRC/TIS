@@ -15,7 +15,7 @@ const Cattle = () => {
             {/* Tarjeta 1 */}
             <div className="w-full p-4 border rounded-lg shadow-sm">
               <h2 className="text-xl font-semibold mb-2">📋 Registro de animales</h2>
-              <p className="text-sm text-gray-700 mb-4">
+              <p className="text-sm text-gray-700 mb-4 text-white">
                 Visualiza el conteo diario y verifica la presencia de los animales.
               </p>
               <Button onClick={() => navigate("/registroanimales")}>
@@ -26,7 +26,7 @@ const Cattle = () => {
             {/* Tarjeta 2 */}
             <div className="w-full p-4 border rounded-lg shadow-sm">
               <h2 className="text-xl font-semibold mb-2">📊 Conteo y presencia</h2>
-              <p className="text-sm text-gray-700 mb-4">
+              <p className="text-sm text-gray-700 mb-4 text-white">
                 Visualiza el conteo diario y verifica la presencia de los animales.
               </p>
               <Button onClick={() => navigate("/conteoypresencia")}>
@@ -37,7 +37,7 @@ const Cattle = () => {
             {/* Tarjeta 3 */}
             <div className="w-full p-4 border rounded-lg shadow-sm">
               <h2 className="text-xl font-semibold mb-2">⚠️ Alertas de discrepancia</h2>
-              <p className="text-sm text-gray-700 mb-4">
+              <p className="text-sm text-gray-700 mb-4 text-white">
                 Consulta las alertas generadas por discrepancias en el conteo o movimiento del ganado.
               </p>
               <Button onClick={() => navigate("/alertas")}>
@@ -48,7 +48,7 @@ const Cattle = () => {
             {/* Tarjeta 4 */}
             <div className="w-full p-4 border rounded-lg shadow-sm">
               <h2 className="text-xl font-semibold mb-2">📦 Total de animales</h2>
-              <p className="text-sm text-gray-700 mb-4">
+              <p className="text-sm text-gray-700 mb-4 text-white">
                 Totalidad de animales en BD
               </p>
               <Button onClick={() => navigate("/totalanimales")}>

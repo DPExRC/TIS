@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, signOut } from "firebase/auth";
+import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, signOut, updateProfile } from "firebase/auth";
 import { app } from "../components/firebase_config";
 
 const Register = () => {
@@ -20,19 +19,24 @@ const Register = () => {
     setError("");
 
     try {
-      // 1. Crear el usuario en Firebase
+      // 1. Crear el usuario
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 2. Enviar email de verificación
+      // 2. Actualizar el perfil con displayName
+      await updateProfile(user, {
+        displayName: displayName,
+      });
+
+      // 3. Enviar email de verificación
       await sendEmailVerification(user);
 
-      // 3. Cerrar sesión hasta que confirme el correo
+      // 4. Cerrar sesión
       await signOut(auth);
 
-      // 4. Mostrar aviso
+      // 5. Aviso al usuario
       alert("Registro exitoso. Revisa tu correo y confirma antes de iniciar sesión.");
-      navigate("/"); // Redirige al login
+      navigate("/");
 
     } catch (error) {
       console.error("Error de registro:", error);

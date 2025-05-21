@@ -1,6 +1,21 @@
+import { useState, useEffect } from "react";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import Navbar from "../components/NavBar";
 
 const Profile = () => {
+  const [user, setUser] = useState(null);
+  const auth = getAuth();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUser(user);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [auth]);
+
   return (
     <div>
       <Navbar />
@@ -9,7 +24,14 @@ const Profile = () => {
 
         <section>
           <h2 className="text-xl font-semibold mb-2">👤 Información del usuario</h2>
-          <p className="text-sm text-gray-700">Nombre, correo electrónico y otros datos asociados a la cuenta.</p>
+          {user ? (
+            <>
+              <p className="text-base text-white font-medium">Nombre: {user.displayName || "No definido"}</p>
+              <p className="text-base text-white font-medium">Correo: {user.email}</p>
+            </>
+          ) : (
+            <p className="text-base text-white">Cargando información del usuario...</p>
+          )}
         </section>
 
         <section>
