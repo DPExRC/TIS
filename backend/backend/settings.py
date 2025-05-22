@@ -128,7 +128,7 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # Si tu frontend está corriendo en este puerto
+    "http://localhost:5173",  
     "https://tis-ivory.vercel.app",
 
 ]
