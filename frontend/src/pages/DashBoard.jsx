@@ -26,6 +26,9 @@ const Dashboard = () => {
   const [speciesOptions, setSpeciesOptions] = useState({});
   const [selectedSpecies, setSelectedSpecies] = useState("");
   const [selectedAnimal, setSelectedAnimal] = useState("");
+  const [dataBar, setDataBar] = useState([]);
+
+  const colores = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#a4de6c"];
 
   const dataLine = [
     { name: "1", CPM: 2500, CPP: 2800 },
@@ -35,38 +38,79 @@ const Dashboard = () => {
     { name: "5", CPM: 2400, CPP: 4100 },
   ];
 
-  const dataBar = [
-    { name: "Norte", Clicks: 6, Purchases: 8, Signups: 5, Forms: 3, Trials: 2 },
-    { name: "Centro", Clicks: 8, Purchases: 9, Signups: 7, Forms: 6, Trials: 5 },
-    { name: "Sur", Clicks: 9, Purchases: 10, Signups: 8, Forms: 7, Trials: 6 },
-  ];
+  // Actualizado para usar el bloque 'actual'
+  const transformarExistencia = (apiData) => {
+    const animales = apiData.actual;
+    const resultado = [];
+
+    for (const zona in animales) {
+      const especies = animales[zona];
+      const entrada = { name: zona };
+
+      for (const especie in especies) {
+        let totalEspecie = 0;
+        const tipos = especies[especie];
+
+        for (const tipo in tipos) {
+          if (tipos[tipo]?.total !== undefined) {
+            totalEspecie += tipos[tipo].total;
+          }
+        }
+
+        entrada[especie] = totalEspecie;
+      }
+
+      resultado.push(entrada);
+    }
+
+    return resultado;
+  };
 
   useEffect(() => {
-    axios.get("http://127.0.0.1:8000/animales/")
+    axios
+      .get("http://127.0.0.1:8000/animales/")
       .then((res) => {
         if (res.data?.animales) {
           setSpeciesOptions(res.data.animales);
         }
       })
       .catch((err) => console.error("Error al obtener animales:", err));
+
+    axios
+      .get("http://127.0.0.1:8000/obtener-existencia/")
+      .then((res) => {
+        if (res.data?.actual) {
+          const datosTransformados = transformarExistencia(res.data);
+          setDataBar(datosTransformados);
+        }
+      })
+      .catch((err) => console.error("Error al obtener existencia:", err));
   }, []);
 
-  const animalOptions = selectedSpecies && speciesOptions[selectedSpecies]
-    ? Object.keys(speciesOptions[selectedSpecies]).filter(key => key !== "registro")
-    : [];
+  const animalOptions =
+    selectedSpecies && speciesOptions[selectedSpecies]
+      ? Object.keys(speciesOptions[selectedSpecies]).filter(
+          (key) => key !== "registro"
+        )
+      : [];
+
+  const especiesEnDataBar = Array.from(
+    new Set(
+      dataBar.flatMap((zona) =>
+        Object.keys(zona).filter((key) => key !== "name")
+      )
+    )
+  );
 
   return (
     <div>
       <Navbar />
       <div className="p-6 min-w-[1024px]">
         <div className="p-6 grid gap-6">
-
-
-          
           {/* Tarjetas de resumen */}
           <div className="grid grid-cols-4 gap-4 text-black">
             <Card>
-              <CardContent className="p-4 ">
+              <CardContent className="p-4">
                 <p>Ganado Total</p>
                 <h2 className="text-2xl font-bold">100</h2>
               </CardContent>
@@ -91,9 +135,8 @@ const Dashboard = () => {
             </Card>
           </div>
 
-          {/* Select Dinamicos */}
+          {/* Selects dinámicos */}
           <div className="flex gap-4">
-            {/* Especie */}
             <div className="text-xl bg-white max-w-[160px] rounded-lg">
               <Select
                 value={selectedSpecies}
@@ -115,7 +158,6 @@ const Dashboard = () => {
               </Select>
             </div>
 
-            {/* Animal */}
             <div className="text-xl bg-white max-w-[160px] rounded-lg">
               <Select
                 value={selectedAnimal}
@@ -136,8 +178,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-
-          {/* Gráfica de barras */}
+          {/* Gráfico de barras */}
           <Card className="w-full">
             <CardContent className="p-4">
               <h3 className="font-bold mb-2 text-black">Existencia</h3>
@@ -148,18 +189,20 @@ const Dashboard = () => {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="Clicks" fill="#8884d8" />
-                    <Bar dataKey="Purchases" fill="#ffc658" />
-                    <Bar dataKey="Signups" fill="#82ca9d" />
-                    <Bar dataKey="Forms" fill="#ff8042" />
-                    <Bar dataKey="Trials" fill="#a4de6c" />
+                    {especiesEnDataBar.map((especie, idx) => (
+                      <Bar
+                        key={especie}
+                        dataKey={especie}
+                        fill={colores[idx % colores.length]}
+                      />
+                    ))}
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </CardContent>
           </Card>
 
-          {/* Gráfica de líneas */}
+          {/* Gráfico de líneas */}
           <Card className="w-full">
             <CardContent className="p-4">
               <h3 className="font-bold mb-2 text-black">Total</h3>
