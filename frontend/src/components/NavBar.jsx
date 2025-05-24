@@ -35,7 +35,7 @@ const Navbar = () => {
   const handleLogout = async () => {
     await signOut(auth);
     localStorage.removeItem("token");
-    navigate("/login");
+    navigate("/");
   };
 
   const handlePerfilClick = () => {

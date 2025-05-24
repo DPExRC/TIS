@@ -5,23 +5,17 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 const CoutingPresenceForm = () => {
   const [formData, setFormData] = useState({
     lugar: '',
-    species: '',
-    animal: '',
     codigo: '',
     nombreRegistro: ''
   });
 
-  const [speciesOptions, setSpeciesOptions] = useState({});
-
   useEffect(() => {
-    // Primero intenta cargar nombreRegistro desde sessionStorage
     const storedName = sessionStorage.getItem('nombreRegistro');
     if (storedName) {
       setFormData(prev => ({ ...prev, nombreRegistro: storedName }));
-      return; // ya tenemos el nombre, no buscamos más
+      return;
     }
 
-    // Si no está en sessionStorage, esperamos a que Firebase cargue el usuario
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user && user.displayName) {
@@ -30,49 +24,80 @@ const CoutingPresenceForm = () => {
       }
     });
 
-    // Cleanup para evitar fugas de memoria
     return () => unsubscribe();
   }, []);
-
-  useEffect(() => {
-    axios.get('http://127.0.0.1:8000/animales/')
-      .then(response => {
-        if (response.data && response.data.animales) {
-          setSpeciesOptions(response.data.animales);
-        }
-      })
-      .catch(error => {
-        console.error('Error al obtener especies:', error);
-      });
-  }, []);
-
-  const animalOptions = formData.species
-    ? Object.keys(speciesOptions[formData.species] || {}).filter(k => k !== 'registro')
-    : [];
 
   const handleChange = (e) => {
     const { id, value } = e.target;
 
     if (id === "codigo") {
-      let raw = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-
-      if (raw.length <= 2) {
-        setFormData(prev => ({ ...prev, [id]: raw }));
-      } else if (raw.length <= 5) {
-        const prefix = raw.slice(0, 2);
-        const digits = raw.slice(2, 5);
-        const formatted = `${prefix}-${digits}`;
-        setFormData(prev => ({ ...prev, [id]: formatted }));
-      }
-
+      const formattedCodes = value
+        .toUpperCase()
+        .split(',')
+        .map(code => {
+          const raw = code.replace(/[^A-Z0-9]/g, '');
+          if (raw.length <= 2) return raw;
+          if (raw.length <= 6) {
+            const prefix = raw.slice(0, 2);
+            const digits = raw.slice(2, 6);
+            return `${prefix}-${digits}`;
+          }
+          return raw.slice(0, 2) + '-' + raw.slice(2, 6);
+        })
+        .join(', ');
+      setFormData(prev => ({ ...prev, codigo: formattedCodes }));
       return;
     }
 
     setFormData(prev => ({
       ...prev,
-      [id]: value,
-      ...(id === 'species' ? { animal: '' } : {})
+      [id]: value
     }));
+  };
+
+  const handleSubmit = async () => {
+    const { lugar, codigo, nombreRegistro } = formData;
+
+    if (!lugar || !codigo || !nombreRegistro) {
+      alert('Por favor complete todos los campos requeridos.');
+      return;
+    }
+
+    const codigos = codigo
+      .split(',')
+      .map(c => c.trim().toUpperCase())
+      .filter(c => /^[A-Z]{2}-\d{1,4}$/.test(c));
+
+    if (codigos.length === 0) {
+      alert("Debe ingresar al menos un código válido en formato XX-1234.");
+      return;
+    }
+
+    try {
+      for (const cod of codigos) {
+        const payload = {
+          zona: lugar,
+          codigo: cod,
+          RegistradoPor: nombreRegistro
+        };
+
+        const response = await axios.post('http://127.0.0.1:8000/registrar-existencia/', payload);
+
+        if (response.status === 201) {
+          console.log(`Código ${cod} registrado correctamente.`);
+        }
+      }
+
+      alert("Todos los códigos fueron registrados exitosamente.");
+      setFormData(prev => ({ ...prev, codigo: '' }));
+
+    } catch (error) {
+      console.error('Error al registrar existencia:', error);
+      alert(
+        error.response?.data?.error ||
+        'Ocurrió un error al registrar el/los código(s). Intente nuevamente.'
+      );
+    }
   };
 
   return (
@@ -80,7 +105,7 @@ const CoutingPresenceForm = () => {
       <section className="border p-4 rounded-lg shadow-md bg-white max-w-xl space-y-4">
         <div className="grid grid-cols-1 gap-4">
           <div>
-            <label htmlFor="lugar" className="block text-sm font-medium text-gray-700">Lugar</label>
+            <label htmlFor="lugar" className="block text-sm font-medium text-gray-700">Zona</label>
             <select
               id="lugar"
               value={formData.lugar}
@@ -88,50 +113,20 @@ const CoutingPresenceForm = () => {
               className="mt-1 block w-full border rounded-md px-3 py-2 bg-gray-100 text-black"
             >
               <option value="">Seleccione una zona</option>
-              <option value="ZonaNorte">Zona Norte</option>
-              <option value="ZonaCentro">Zona Centro</option>
-              <option value="ZonaSur">Zona Sur</option>
+              <option value="Norte">Norte</option>
+              <option value="Centro">Centro</option>
+              <option value="Sur">Sur</option>
             </select>
           </div>
 
           <div>
-            <label htmlFor="species" className="block text-sm font-medium text-gray-700">Especie</label>
-            <select
-              id="species"
-              value={formData.species}
-              onChange={handleChange}
-              className="mt-1 block w-full border rounded-md px-3 py-2 bg-gray-100 text-black"
-            >
-              <option value="">Seleccione especie</option>
-              {Object.keys(speciesOptions).map(specie => (
-                <option key={specie} value={specie}>{specie}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="animal" className="block text-sm font-medium text-gray-700">Animal</label>
-            <select
-              id="animal"
-              value={formData.animal}
-              onChange={handleChange}
-              disabled={!formData.species}
-              className="mt-1 block w-full border rounded-md px-3 py-2 bg-gray-100 text-black"
-            >
-              <option value="">Seleccione animal</option>
-              {animalOptions.map(animal => (
-                <option key={animal} value={animal}>{animal}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="codigo" className="block text-sm font-medium">Código</label>
+            <label htmlFor="codigo" className="block text-sm font-medium">Códigos (separados por coma)</label>
             <input
               type="text"
               id="codigo"
               value={formData.codigo}
               onChange={handleChange}
+              placeholder="Ej: VA-0001, PA-0023"
               className="mt-1 block w-full border rounded-md px-3 py-2 bg-gray-100 text-black"
             />
           </div>
@@ -150,6 +145,13 @@ const CoutingPresenceForm = () => {
             />
           </div>
         </div>
+
+        <button
+          onClick={handleSubmit}
+          className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
+        >
+          Registrar Existencia
+        </button>
       </section>
     </div>
   );

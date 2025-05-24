@@ -12,6 +12,8 @@ const RegisterAnimals = () => {
           <RegisterAnimalsForm/>
         </section>
 
+
+
       </div>
     </div>
   );
