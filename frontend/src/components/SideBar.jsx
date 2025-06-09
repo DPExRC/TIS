@@ -6,6 +6,8 @@ import {
   LogOut,
   Footprints,
   FileText,
+  AlertTriangle,
+  TriangleAlert,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -112,19 +114,27 @@ const Sidebar = () => {
             >
               Conteo y presencia
             </li>
-            <li
-              onClick={() => navigate("/alertas")}
-              className="cursor-pointer"
-            >
-              Alertas de discrepancia
-            </li>
+
             <li
               onClick={() => navigate("/totalanimales")}
               className="cursor-pointer"
             >
               Total de animales
             </li>
+
+            <li
+              onClick={() => navigate("/totalespecifico")}
+              className="cursor-pointer"
+            >
+              Total especifico
+            </li>
           </SidebarItem>
+
+          <SidebarItem
+            icon={<TriangleAlert />}
+            label="Alertas"
+            onClick={() => navigate("/alertas")}
+          />
 
           <SidebarItem icon={<FileText className="w-5 h-5" />} label="Reportes">
             <li onClick={() => navigate("/reportes")} className="cursor-pointer">

@@ -1,3 +1,4 @@
+import requests
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -195,37 +196,55 @@ class RegistrarExistenciaAnimales(APIView):
 
 
 
-class CompararExistenciasView(APIView):
-    def get(self, request, zona, especie, animal):
+class CompararCodigos(APIView):
+    def get(self, request):
         try:
-            base_ref = (
-                db.collection('Existencia')
-                .document(zona)
-                .collection(especie)
-                .document(animal)
-                .collection('Registros')
-            )
+            # 1. Obtener datos de tu propia API localmente
+            response = requests.get('http://localhost:8000/obtener-existencia/')
+            data = response.json()
 
-            actual = base_ref.document('actual').get().to_dict()
-            anterior = base_ref.document('anterior').get().to_dict()
+            anterior = data.get('anterior', {})
+            actual = data.get('actual', {})
 
-            if not actual or not anterior:
-                return Response({"error": "Faltan registros para comparar."}, status=status.HTTP_400_BAD_REQUEST)
+            resultados = {}
 
-            set_actual = set(actual.get('codigos', []))
-            set_anterior = set(anterior.get('codigos', []))
+            for zona in actual:
+                if zona not in anterior:
+                    continue
 
-            return Response({
-                "nuevos": list(set_actual - set_anterior),
-                "faltantes": list(set_anterior - set_actual),
-                "comunes": list(set_actual & set_anterior),
-                "actual": actual,
-                "anterior": anterior
-            })
+                resultados[zona] = {}
+                for especie in actual[zona]:
+                    if especie not in anterior[zona]:
+                        continue
+
+                    resultados[zona][especie] = {}
+                    for animal in actual[zona][especie]:
+                        if animal not in anterior[zona][especie]:
+                            continue
+
+                        codigos_actual = set(actual[zona][especie][animal].get("codigos", []))
+                        codigos_anterior = set(anterior[zona][especie][animal].get("codigos", []))
+
+                        mismos_codigos = codigos_actual == codigos_anterior
+                        misma_cantidad = len(codigos_actual) == len(codigos_anterior)
+
+                        resultados[zona][especie][animal] = {
+                            "misma_cantidad": misma_cantidad,
+                            "mismos_codigos": mismos_codigos,
+                            "total_actual": len(codigos_actual),
+                            "total_anterior": len(codigos_anterior),
+                            "diferencias": {
+                                "nuevos": list(codigos_actual - codigos_anterior),
+                                "faltantes": list(codigos_anterior - codigos_actual),
+                            }
+                        }
+
+            return Response(resultados)
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    
 class ObtenerExistenciaAnimales(APIView):
     def get(self, request):
         try:

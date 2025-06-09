@@ -11,6 +11,7 @@ import CoutingPresence from './pages/CountingPresence';
 import RegisterAnimals from './pages/RegisterAnimals';7
 import TotalAnimals from './pages/TotalAnimals'; 
 import Settings from './pages/settings';
+import ConteoPresenciaPage from './pages/Totalspecifico';  
 
 //import PrivateRoute from './components/PrivateRoute'; // Importamos el PrivateRoute
 
@@ -29,6 +30,8 @@ function App() {
         <Route path="/registroanimales" element={<RegisterAnimals />} />
         <Route path="/totalanimales" element={< TotalAnimals/>} />  
         <Route path="/settings" element={<Settings />} />
+        <Route path="/totalespecifico" element={<ConteoPresenciaPage />} />
+
 
 
         {/* Ruta protegida por PrivateRoute 
