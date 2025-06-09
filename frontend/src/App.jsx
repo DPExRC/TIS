@@ -9,7 +9,8 @@ import Profile from './pages/Profile';
 import Alerts from './pages/Alerts';
 import CoutingPresence from './pages/CountingPresence';
 import RegisterAnimals from './pages/RegisterAnimals';7
-import TotalAnimals from './pages/TotalAnimals'; // Asegúrate de que esta ruta sea correcta
+import TotalAnimals from './pages/TotalAnimals'; 
+import Settings from './pages/settings';
 
 //import PrivateRoute from './components/PrivateRoute'; // Importamos el PrivateRoute
 
@@ -26,7 +27,8 @@ function App() {
         <Route path="/alertas" element={<Alerts />} />
         <Route path="/conteoypresencia" element={<CoutingPresence />} />
         <Route path="/registroanimales" element={<RegisterAnimals />} />
-        <Route path="/totalanimales" element={< TotalAnimals/>} />
+        <Route path="/totalanimales" element={< TotalAnimals/>} />  
+        <Route path="/settings" element={<Settings />} />
 
 
         {/* Ruta protegida por PrivateRoute 

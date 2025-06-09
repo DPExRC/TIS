@@ -3,7 +3,6 @@
     top: 0;
     left: 0;
     width: 100%;
-    background-color: #cfbbbf !important; 
     padding: 16px;
     box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
     z-index: 50;
@@ -23,6 +22,7 @@
     justify-content: center;
     gap: 24px;
   }
+
   
   .nav-items a,
   .nav-profile button {
@@ -52,36 +52,42 @@
     cursor: pointer;
     transition: border-color 0.25s;
   }
-  button:hover {
-    border-color: red;
-  }
+
 
   #PerfilButton:hover {
     border-color: blue;
   }
 
-  #UsernameDropdown {
-    background-color: blanchedalmond;
+  #LogoutButton:hover {
+    border-color: red;
   }
 
+  #UsernameDropdown {
+    background-color: white;
+    color: black;
+  }
+
+  .NavBar-Link {
+    color: white;
+    transition: 0.2s;
+  }
+
+  .NavBar-Link:hover {
+    color: blueviolet;
+    scale: 1.2;
+  }
 
   #UsernameDropdown:hover {
     border-color: black;
-
   }
 
   button:focus,
   button:focus-visible {
     outline: 4px auto -webkit-focus-ring-color;
   }
-  /*
-  a {
-    font-weight: 500;
-    color: black;
-    text-decoration: inherit;
-  }
-*/
+
+
   /*NavBar*/
   a:hover {
-    color: black;
+    color: white;
   }

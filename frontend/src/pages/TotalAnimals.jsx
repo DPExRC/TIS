@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
 import Navbar from "../components/NavBar";
+import Sidebar from "../components/SideBar"; // Asegúrate que este componente exista
 import { Card, CardContent } from "../components/Card";
 import { Pencil, Trash2 } from "lucide-react";
 import "../styles/TotalAnimals.css";
@@ -115,70 +116,79 @@ const TotalAnimals = () => {
   };
 
   return (
-    <div>
-      <Navbar />
-      <section className="fixed top-23 left-3 w-full z-50 py-4" style={{ backgroundColor: "#242424" }}>
-        <div className="max-w-screen-xl mx-auto px-4 text-white">
-          <input
-            type="text"
-            placeholder="Buscar por especie..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full md:w-1/3 px-4 py-2 rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-      </section>
+    <div className="flex min-h-screen bg-gray-100">
+      <Sidebar />
 
-      <div className="p-6 space-y-6 mt-32">
-        {loading && <p className="text-gray-500">Cargando...</p>}
-        {error && <p className="text-red-500">{error}</p>}
+      <div className="flex flex-col flex-grow">
+        <Navbar />
 
-        {!loading && !error && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Object.entries(filteredData).map(([especie, subespecies]) => (
-              <Card key={especie}>
-                <CardContent className="p-4 space-y-6 text-black">
-                  <h2 className="text-2xl font-bold mb-4">{especie}</h2>
-                  {Object.entries(subespecies).map(
-                    ([subespecie, listaAnimales]) =>
-                      Array.isArray(listaAnimales) && (
-                        <div key={subespecie} className="mb-6">
-                          <h3 className="text-lg font-semibold mb-2">
-                            {subespecie}
-                          </h3>
-                          <table className="w-full text-sm text-center text-gray-700">
-                            <thead className="bg-gray-200">
-                              <tr>
-                                <th className="px-2 py-1">Código</th>
-                                <th className="px-2 py-1">Nacimiento</th>
-                                <th className="px-1 py-1 w-20 whitespace-nowrap">Acciones</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {listaAnimales.map((animal, index) => (
-                                <tr key={`${especie}-${subespecie}-${index}`} className="hover:bg-gray-50">
-                                  <td>{animal.code}</td>
-                                  <td>{animal.birthday || "N/A"}</td>
-                                  <td className="flex justify-center gap-2">
-                                    <button onClick={() => handleEdit(animal)} title="Editar" className="hover:text-blue-900" id="btnEdit">
-                                      <Pencil size={18} />
-                                    </button>
-                                    <button onClick={() => handleDelete(animal)} title="Eliminar" className="hover:text-red-700" id="btnDelete">
-                                      <Trash2 size={18} />
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+        <div className="ml-50 bg-gradient-to-r from-blue-400 to-blue-700 text-white py-12 shadow-md">
+          <div className="px-6">
+            <h1 className="text-2xl font-semibold">Total de animales registrados</h1>
           </div>
-        )}
+        </div>
+
+        <div className="ml-64 p-6 space-y-6">
+          <div className="max-w-screen-xl mx-auto px-4">
+            <input
+              type="text"
+              placeholder="Buscar por especie..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full md:w-1/3 px-4 py-2 rounded-md border border-gray-300 text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {loading && <p className="text-gray-500">Cargando...</p>}
+          {error && <p className="text-red-500">{error}</p>}
+
+          {!loading && !error && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Object.entries(filteredData).map(([especie, subespecies]) => (
+                <Card key={especie}>
+                  <CardContent className="p-4 space-y-6 text-black">
+                    <h2 className="text-2xl font-bold mb-4">{especie}</h2>
+                    {Object.entries(subespecies).map(
+                      ([subespecie, listaAnimales]) =>
+                        Array.isArray(listaAnimales) && (
+                          <div key={subespecie} className="mb-6">
+                            <h3 className="text-lg font-semibold mb-2">
+                              {subespecie}
+                            </h3>
+                            <table className="w-full text-sm text-center text-gray-700">
+                              <thead className="bg-gray-200">
+                                <tr>
+                                  <th className="px-2 py-1">Código</th>
+                                  <th className="px-2 py-1">Nacimiento</th>
+                                  <th className="px-1 py-1 w-20 whitespace-nowrap">Acciones</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {listaAnimales.map((animal, index) => (
+                                  <tr key={`${especie}-${subespecie}-${index}`} className="hover:bg-gray-50">
+                                    <td>{animal.code}</td>
+                                    <td>{animal.birthday || "N/A"}</td>
+                                    <td className="flex justify-center gap-2">
+                                      <button onClick={() => handleEdit(animal)} title="Editar" className="hover:text-blue-900" id="btnEdit">
+                                        <Pencil size={18} />
+                                      </button>
+                                      <button onClick={() => handleDelete(animal)} title="Eliminar" className="hover:text-red-700" id="btnDelete">
+                                        <Trash2 size={18} />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

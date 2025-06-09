@@ -1,36 +1,23 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
-import "../styles/NavBar.css";
+import { Bell, Settings, User } from "lucide-react";
 import logo from "../assets/logo.png";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const auth = getAuth();
   const [username, setUsername] = useState("");
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768); // Ejemplo: móvil <768px
+  const [notificacionesAbiertas, setNotificacionesAbiertas] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        const name = user.displayName || user.email;
-        setUsername(name);
+        setUsername(user.displayName || user.email);
       }
     });
-
     return () => unsubscribe();
   }, [auth]);
-
-  useEffect(() => {
-    // Listener para cambiar isMobile cuando se redimensiona ventana
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -39,79 +26,89 @@ const Navbar = () => {
   };
 
   const handlePerfilClick = () => {
-    navigate('/perfil');
+    navigate("/perfil");
   };
 
-  const toggleDropdown = () => {
-    setDropdownOpen(prev => !prev);
+  const toggleNotificaciones = () => {
+    setNotificacionesAbiertas((prev) => !prev);
   };
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest("#notificationWrapper")) {
+        setNotificacionesAbiertas(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
 
   return (
     <>
       <nav className="fixed top-0 left-0 w-full bg-blue-600 p-4 shadow-md z-50">
-        <div className="container mx-auto flex justify-between items-center">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
           {/* Logo */}
-          <Link to="/panel">
-            <img src={logo} alt="Mi app" className="h-15" />
+          <Link to="/panel" className="flex items-center space-x-2">
+            <img src={logo} alt="Logo" className="h-10 w-auto" />
           </Link>
 
-          {/* Items centrados */}
-          <div className="flex-grow flex justify-center space-x-8">
-            <Link to="/ganado" className="text-white ">Ganado</Link>
-            <Link to="/reportes" className="text-white ">Reportes</Link>
+          {/* Links centrales */}
+          <div className="hidden md:flex space-x-6">
+            <Link
+              to="/ganado"
+              className="text-white hover:text-blue-200 font-medium transition-all duration-200 hover:scale-105"
+            >
+              Ganado
+            </Link>
+            <Link
+              to="/reportes"
+              className="text-white hover:text-blue-200 font-medium transition-all duration-200 hover:scale-105"
+            >
+              Reportes
+            </Link>
           </div>
 
-          {/* Botón hamburguesa o username según tamaño */}
-          <div className="relative">
-            <button
-              id={isMobile ? "HamburgerDropdown" : "UsernameDropdown"}
-              onClick={toggleDropdown}
-              className={`p-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-300 flex items-center ${
-                isMobile ? "text-white" : "text-black"
-              }`}
-              aria-label="Menú"
-              aria-expanded={dropdownOpen}
-            >
-              {isMobile ? (
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              ) : (
-                <span>{username}</span>
+          {/* Acciones lado derecho */}
+          <div className="flex items-center space-x-4">
+            <div className="relative" id="notificationWrapper">
+              <button
+                onClick={toggleNotificaciones}
+                className="text-white hover:text-blue-200 transition-colors p-1 rounded-full hover:bg-blue-800"
+                aria-label="Notificaciones"
+              >
+                <Bell size={20} />
+              </button>
+
+              {notificacionesAbiertas && (
+                <div className="absolute right-0 mt-2 w-72 bg-white text-black rounded-md shadow-xl z-50 border border-gray-200">
+                  <div className="p-4 font-semibold border-b text-gray-700">🔔 Notificaciones</div>
+                  <ul className="max-h-64 overflow-y-auto divide-y text-sm">
+                    <li className="p-3 hover:bg-gray-100">No hay nuevas notificaciones.</li>
+                    {/* Aquí puedes mapear notificaciones reales */}
+                    {/* <li className="p-3 hover:bg-gray-100">Nueva entrada de ganado registrada.</li> */}
+                  </ul>
+                  <div className="text-center text-blue-600 text-sm py-2 hover:underline cursor-pointer">
+                    Ver todas
+                  </div>
+                </div>
               )}
+            </div>
+
+            <button
+              onClick={handlePerfilClick}
+              className="flex items-center space-x-2 text-white hover:text-blue-200 focus:outline-none transition-colors p-1 rounded-full hover:bg-blue-800 font-medium"
+              aria-label="Ir al perfil"
+              title="Ir al perfil"
+            >
+              <User size={20} />
+              <span className="hidden md:inline">{username}</span>
             </button>
-
-
-            {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white text-black rounded-md shadow-lg z-50">
-                <button
-                  id="PerfilButton"
-                  onClick={handlePerfilClick}
-                  className="w-full text-left px-4 py-2 hover:bg-gray-100 text-black"
-                >
-                  Ver perfil
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100"
-                >
-                  Cerrar sesión
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </nav>
 
-      {/* Espacio inferior para separar del contenido */}
-      <div className="h-20"></div>
+      {/* Margen inferior para el contenido */}
+      <div className="h-16"></div>
     </>
   );
 };

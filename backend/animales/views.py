@@ -225,7 +225,7 @@ class CompararExistenciasView(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+
 class ObtenerExistenciaAnimales(APIView):
     def get(self, request):
         try:
@@ -266,12 +266,19 @@ class ObtenerExistenciaAnimales(APIView):
                                     "codigos": codigos,
                                     "total": len(codigos)
                                 }
+                            else:
+                                # Entrada con total=0 si no hay documento
+                                resultado[tipo_registro][zona][especie][tipo_animal] = {
+                                    "FechaReporte": None,
+                                    "RegistradoPor": None,
+                                    "codigos": [],
+                                    "total": 0
+                                }
 
             return Response(resultado, status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 class EliminarAnimales(APIView):
     def delete(self, request):

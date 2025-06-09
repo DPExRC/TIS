@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Navbar from "../components/NavBar";
-import { ResponsiveContainer } from "recharts";
-
+import Sidebar from "../components/SideBar";
+import CoutingPresenceTable from "../tables/CoutingPresenceTable";
 import { Card, CardContent } from "../components/Card";
 import {
   Select,
@@ -12,33 +12,33 @@ import {
   SelectItem,
 } from "../components/Select";
 import {
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   Tooltip,
-  BarChart,
-  Bar,
   Legend,
+  ResponsiveContainer,
 } from "recharts";
 
 const Dashboard = () => {
   const [speciesOptions, setSpeciesOptions] = useState({});
+  const [selectedZone, setSelectedZone] = useState("");
   const [selectedSpecies, setSelectedSpecies] = useState("");
   const [selectedAnimal, setSelectedAnimal] = useState("");
   const [dataBar, setDataBar] = useState([]);
 
-  const colores = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#a4de6c"];
-
-  const dataLine = [
-    { name: "1", CPM: 2500, CPP: 2800 },
-    { name: "2", CPM: 2200, CPP: 3000 },
-    { name: "3", CPM: 2600, CPP: 3700 },
-    { name: "4", CPM: 2100, CPP: 2900 },
-    { name: "5", CPM: 2400, CPP: 4100 },
+  const colores = [
+    "#8884d8",
+    "#82ca9d",
+    "#ffc658",
+    "#ff8042",
+    "#a4de6c",
+    "#d0ed57",
+    "#8dd1e1",
   ];
 
-  // Actualizado para usar el bloque 'actual'
+  // Transformación para gráfico de barras normal (sumas por especie y zona)
   const transformarExistencia = (apiData) => {
     const animales = apiData.actual;
     const resultado = [];
@@ -67,6 +67,7 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
+    // Obtener especies y animales
     axios
       .get("http://127.0.0.1:8000/animales/")
       .then((res) => {
@@ -76,6 +77,7 @@ const Dashboard = () => {
       })
       .catch((err) => console.error("Error al obtener animales:", err));
 
+    // Obtener existencia por zona
     axios
       .get("http://127.0.0.1:8000/obtener-existencia/")
       .then((res) => {
@@ -94,6 +96,7 @@ const Dashboard = () => {
         )
       : [];
 
+  // Obtener lista única de especies presentes en dataBar
   const especiesEnDataBar = Array.from(
     new Set(
       dataBar.flatMap((zona) =>
@@ -103,122 +106,151 @@ const Dashboard = () => {
   );
 
   return (
-    <div>
-      <Navbar />
-      <div className="p-6 min-w-[1024px]">
-        <div className="p-6 grid gap-6">
-          {/* Tarjetas de resumen */}
-          <div className="grid grid-cols-4 gap-4 text-black">
-            <Card>
-              <CardContent className="p-4">
-                <p>Ganado Total</p>
-                <h2 className="text-2xl font-bold">100</h2>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <p>Ganado Faltante</p>
-                <h2 className="text-2xl font-bold">2</h2>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <p>Hora Registro</p>
-                <h2 className="text-2xl font-bold">16:00</h2>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <p>Personal</p>
-                <h2 className="text-2xl font-bold">Juanito Perez</h2>
-              </CardContent>
-            </Card>
+    <div className="flex min-h-screen">
+      <Sidebar />
+
+      <div className="flex-1 ml-50">
+        <Navbar />
+
+        <div className="ml-0 bg-gradient-to-r from-blue-400 to-blue-700 text-white py-12 shadow-md">
+          <div className="px-6">
+            <h1 className="text-2xl font-semibold">Dashboard</h1>
           </div>
+        </div>
 
-          {/* Selects dinámicos */}
-          <div className="flex gap-4">
-            <div className="text-xl bg-white max-w-[160px] rounded-lg">
-              <Select
-                value={selectedSpecies}
-                onValueChange={(value) => {
-                  setSelectedSpecies(value);
-                  setSelectedAnimal("");
-                }}
-              >
-                <SelectTrigger className="w-44 h-12 text-base text-black px-4 py-2">
-                  <SelectValue placeholder="Especie" />
-                </SelectTrigger>
-                <SelectContent className="text-sm text-black">
-                  {Object.keys(speciesOptions).map((specie) => (
-                    <SelectItem key={specie} value={specie}>
-                      {specie}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="text-xl bg-white max-w-[160px] rounded-lg">
-              <Select
-                value={selectedAnimal}
-                onValueChange={setSelectedAnimal}
-                disabled={!selectedSpecies}
-              >
-                <SelectTrigger className="w-44 h-12 text-base text-black px-4 py-2">
-                  <SelectValue placeholder="Animal" />
-                </SelectTrigger>
-                <SelectContent className="text-sm text-black">
-                  {animalOptions.map((animal) => (
-                    <SelectItem key={animal} value={animal}>
-                      {animal}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Gráfico de barras */}
-          <Card className="w-full">
-            <CardContent className="p-4">
-              <h3 className="font-bold mb-2 text-black">Existencia</h3>
-              <div className="w-full h-[250px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={dataBar}>
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    {especiesEnDataBar.map((especie, idx) => (
-                      <Bar
-                        key={especie}
-                        dataKey={especie}
-                        fill={colores[idx % colores.length]}
-                      />
+        <div className="p-6 min-w-[1024px]">
+          <div className="grid gap-6">
+            {/* Controles de filtro */}
+            <div className="flex gap-4 mb-6">
+              {/* Zona */}
+              <div className="text-xl bg-white max-w-[160px] rounded-lg">
+                <Select
+                  value={selectedZone}
+                  onValueChange={(value) => setSelectedZone(value)}
+                >
+                  <SelectTrigger className="w-44 h-12 text-base text-black px-4 py-2">
+                    <SelectValue placeholder="Zona" />
+                  </SelectTrigger>
+                  <SelectContent className="text-sm text-black max-h-60 overflow-auto">
+                    <SelectItem value="todas">Todas</SelectItem>
+                    {dataBar.map((zona) => (
+                      <SelectItem key={zona.name} value={zona.name}>
+                        {zona.name}
+                      </SelectItem>
                     ))}
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+                  </SelectContent>
+                </Select>
 
-          {/* Gráfico de líneas */}
-          <Card className="w-full">
-            <CardContent className="p-4">
-              <h3 className="font-bold mb-2 text-black">Total</h3>
-              <div className="w-full h-[250px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={dataLine}>
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="CPM" stroke="#8884d8" />
-                    <Line type="monotone" dataKey="CPP" stroke="#82ca9d" />
-                  </LineChart>
-                </ResponsiveContainer>
               </div>
-            </CardContent>
-          </Card>
+
+              {/* Especie */}
+              <div className="text-xl bg-white max-w-[160px] rounded-lg">
+                <Select
+                  value={selectedSpecies}
+                  onValueChange={(value) => {
+                    setSelectedSpecies(value);
+                    setSelectedAnimal("");
+                  }}
+                >
+                  <SelectTrigger className="w-44 h-12 text-base text-black px-4 py-2">
+                    <SelectValue placeholder="Especie" />
+                  </SelectTrigger>
+                  <SelectContent className="text-sm text-black max-h-60 overflow-auto">
+                    {Object.keys(speciesOptions).map((specie) => (
+                      <SelectItem key={specie} value={specie}>
+                        {specie}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Animal */}
+              <div className="text-xl bg-white max-w-[160px] rounded-lg">
+                <Select
+                  value={selectedAnimal}
+                  onValueChange={setSelectedAnimal}
+                  disabled={!selectedSpecies}
+                >
+                  <SelectTrigger className="w-44 h-12 text-base text-black px-4 py-2">
+                    <SelectValue placeholder="Animal" />
+                  </SelectTrigger>
+                  <SelectContent className="text-sm text-black max-h-60 overflow-auto">
+                    {animalOptions.map((animal) => (
+                      <SelectItem key={animal} value={animal}>
+                        {animal}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Gráfico de barras normal */}
+            <Card className="w-full">
+              <CardContent className="p-4">
+                <h3 className="font-bold mb-4 text-black">
+                  Existencia por Zona y Especie
+                </h3>
+                <div className="w-full h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={
+                        selectedZone
+                          ? dataBar.filter((d) => d.name === selectedZone)
+                          : dataBar
+                      }
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <XAxis dataKey="name" />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip />
+                      <Legend />
+                      {especiesEnDataBar.map((especie, idx) => (
+                        <Bar
+                          key={especie}
+                          dataKey={especie}
+                          fill={colores[idx % colores.length]}
+                          isAnimationActive={false}
+                        />
+                      ))}
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Tabla de conteo */}
+            <CoutingPresenceTable />
+
+            {/* Cards resumen */}
+            <div className="grid grid-cols-4 gap-4 text-black">
+              <Card>
+                <CardContent className="p-4">
+                  <p>Ganado Total</p>
+                  <h2 className="text-2xl font-bold">100</h2>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p>Ganado Faltante</p>
+                  <h2 className="text-2xl font-bold">2</h2>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p>Hora Registro</p>
+                  <h2 className="text-2xl font-bold">16:00</h2>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p>Personal</p>
+                  <h2 className="text-2xl font-bold">Juanito Perez</h2>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>

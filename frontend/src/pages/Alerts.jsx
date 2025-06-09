@@ -1,20 +1,27 @@
 import Navbar from "../components/NavBar";
+import Sidebar from "../components/SideBar";
 
 const Alerts = () => {
   return (
     <div>
-      <Navbar />
-      <div className="p-6 space-y-6">
-        <h1 className="text-2xl font-bold">Página de Ganado</h1>
+      <Sidebar />
 
+      <div className="ml-50">
+        <Navbar />
 
+        <div className="ml-0 bg-gradient-to-r from-blue-400 to-blue-700 text-white py-12 shadow-md">
+          <div className="px-6">
+            <h1 className="text-2xl font-semibold">Alertas de discrepancia</h1>
+          </div>
+        </div>
 
-        <section>
-          <h2 className="text-xl font-semibold mb-2">⚠️ Alertas de discrepancia</h2>
-          <p className="text-sm text-gray-700">Consulta las alertas generadas por discrepancias en el conteo o movimiento del ganado.</p>
-        </section>
-
-
+        <main className="p-6 space-y-6">
+          <section>
+            <p className="text-sm text-gray-700">
+              Consulta las alertas generadas por discrepancias en el conteo o movimiento del ganado.
+            </p>
+          </section>
+        </main>
       </div>
     </div>
   );
