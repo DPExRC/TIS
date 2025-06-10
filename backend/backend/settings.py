@@ -36,8 +36,22 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(cred_path.resolve())
 # --- Resto de settings.py sigue aquí ---
 
 SECRET_KEY = 'django-insecure-t(6cklw_cri)9_u+vf@$=r!aw42e((%xi%lr1a(e7&x%x)#q_8'
-DEBUG = True
-ALLOWED_HOSTS = []
+DEBUG = False
+ALLOWED_HOSTS = [
+    "http://localhost:5173",
+    "https://tis-ivory.vercel.app",
+]
+
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECRET_KEY="vZqS-E9XOCiEqN2Qa7H40DnqdwJj0lhlIzbhAaT0eDqyDRyg2F7jwleW7a1M_dxgYZhUzcH9a_J0XULdeqlISw"
+
+SECURE_HSTS_SECONDS = 31536000  # 1 año en segundos
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+
+SECURE_SSL_REDIRECT = True
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
