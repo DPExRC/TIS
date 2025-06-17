@@ -128,6 +128,20 @@ const Sidebar = () => {
             >
               Total especifico
             </li>
+
+            <li
+              onClick={() => navigate("/horarios")}
+              className="cursor-pointer"
+            >
+              Horarios 
+            </li>
+            
+            <li
+              onClick={() => navigate("/scanner")}
+              className="cursor-pointer"
+            >
+              scanner
+            </li>
           </SidebarItem>
 
           <SidebarItem
@@ -146,6 +160,13 @@ const Sidebar = () => {
             >
               Mensuales
             </li>
+          </SidebarItem>
+
+          <SidebarItem icon={<FileText className="w-5 h-5" />} label="Zonas">
+            <li onClick={() => navigate("/zonas")} className="cursor-pointer">
+              Zonas
+            </li>
+
           </SidebarItem>
         </nav>
 

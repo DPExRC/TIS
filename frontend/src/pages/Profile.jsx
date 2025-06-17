@@ -7,7 +7,6 @@ import {
   updatePassword,
 } from "firebase/auth";
 import Navbar from "../components/NavBar";
-import "../styles/Profile.css"; // Asegúrate de mantener esta
 
 const Profile = () => {
   const [user, setUser] = useState(null);

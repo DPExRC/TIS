@@ -160,7 +160,7 @@ const Login = () => {
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
           {lockedUntil && Date.now() < lockedUntil && (
-            <p className="text-yellow-300 text-sm">
+            <p className="text-white-300 text-sm">
               Espera {remainingTime} para volver a intentarlo.
             </p>
           )}

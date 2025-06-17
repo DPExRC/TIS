@@ -16,13 +16,13 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm",
+      "flex w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-black shadow-sm",
       className
     )}
     {...props}
   >
     {children}
-    <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+    <ChevronDown className="ml-2 h-4 w-4 opacity-70 text-black" />
   </SelectPrimitive.Trigger>
 ));
 SelectTrigger.displayName = SelectPrimitive.Trigger.displayName;
@@ -34,7 +34,10 @@ const SelectContent = React.forwardRef<
   <SelectPrimitive.Portal>
     <SelectPrimitive.Content
       ref={ref}
-      className={cn("bg-white border shadow-lg rounded-md", className)}
+      className={cn(
+        "bg-white text-black border border-gray-300 shadow-lg rounded-md",
+        className
+      )}
       {...props}
     >
       <SelectPrimitive.Viewport>{children}</SelectPrimitive.Viewport>
@@ -49,12 +52,15 @@ const SelectItem = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <SelectPrimitive.Item
     ref={ref}
-    className={cn("cursor-pointer px-3 py-2 text-sm hover:bg-gray-100", className)}
+    className={cn(
+      "relative cursor-pointer px-3 py-2 text-sm text-black hover:bg-gray-100 focus:bg-gray-200 focus:outline-none",
+      className
+    )}
     {...props}
   >
     <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
     <SelectPrimitive.ItemIndicator className="absolute right-2 inline-flex items-center">
-      <Check className="h-4 w-4" />
+      <Check className="h-4 w-4 text-black" />
     </SelectPrimitive.ItemIndicator>
   </SelectPrimitive.Item>
 ));

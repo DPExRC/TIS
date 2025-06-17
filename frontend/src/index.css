@@ -21,7 +21,7 @@ body {
   display: flex;
   flex-direction: column;
   background-color: #fafafa;
-  color: #1f2937;
+  color: #371f2d;
   overflow-x: hidden;
   padding-left: 0px; /* espacio reservado para Sidebar */
   transition: padding-left 0.3s ease;

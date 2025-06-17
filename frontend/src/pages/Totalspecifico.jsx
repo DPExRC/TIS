@@ -1,6 +1,5 @@
 import Navbar from "../components/NavBar";
-import CoutingPresenceTable from "../tables/CoutingPresenceTable"; // ajusta la ruta si es necesario
-
+import CoutingPresenceTable from "../tables/CoutingPresenceTable"; 
 const ConteoPresenciaPage = () => {
   return (
     <div className="min-h-screen">

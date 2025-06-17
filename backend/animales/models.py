@@ -1,3 +1,9 @@
-from django.db import models
+from dataclasses import dataclass
+from datetime import date
 
-# Create your models here.
+@dataclass
+class Animal:
+    codigo: str
+    especie: str
+    nombre: str
+    fecha_nacimiento: date

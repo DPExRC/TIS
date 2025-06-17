@@ -38,7 +38,6 @@ const Dashboard = () => {
     "#8dd1e1",
   ];
 
-  // Transformación para gráfico de barras normal (sumas por especie y zona)
   const transformarExistencia = (apiData) => {
     const animales = apiData.actual;
     const resultado = [];
@@ -67,7 +66,6 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    // Obtener especies y animales
     axios
       .get("http://127.0.0.1:8000/animales/")
       .then((res) => {
@@ -77,7 +75,6 @@ const Dashboard = () => {
       })
       .catch((err) => console.error("Error al obtener animales:", err));
 
-    // Obtener existencia por zona
     axios
       .get("http://127.0.0.1:8000/obtener-existencia/")
       .then((res) => {
@@ -96,7 +93,6 @@ const Dashboard = () => {
         )
       : [];
 
-  // Obtener lista única de especies presentes en dataBar
   const especiesEnDataBar = Array.from(
     new Set(
       dataBar.flatMap((zona) =>
@@ -106,29 +102,40 @@ const Dashboard = () => {
   );
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex flex-col md:flex-row min-h-screen">
       <Sidebar />
 
-      <div className="flex-1 ml-50">
+      <div className="flex-1 md:ml-50">
         <Navbar />
 
-        <div className="ml-0 bg-gradient-to-r from-blue-400 to-blue-700 text-white py-12 shadow-md">
-          <div className="px-6">
-            <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <div className="ml-0 bg-gradient-to-r from-blue-400 to-blue-700 text-white py-8 md:py-12 shadow-md">
+          <div className="px-4 md:px-6">
+            <h1 className="text-xl md:text-2xl font-semibold">Dashboard</h1>
           </div>
         </div>
 
-        <div className="p-6 min-w-[1024px]">
-          <div className="grid gap-6">
+        <div className="p-4 md:p-6 w-full overflow-x-auto">
+          {/* ALERTAS */}
+          <div className="mb-6">
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+              <strong className="font-bold">¡Atención!</strong>
+              <span className="block sm:inline">
+                {" "}
+                Hay animales registrados como faltantes en una o más zonas.
+              </span>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:gap-6">
             {/* Controles de filtro */}
-            <div className="flex gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row gap-3 mb-4 md:mb-6">
               {/* Zona */}
-              <div className="text-xl bg-white max-w-[160px] rounded-lg">
+              <div className="bg-white rounded-lg w-full sm:w-auto">
                 <Select
                   value={selectedZone}
                   onValueChange={(value) => setSelectedZone(value)}
                 >
-                  <SelectTrigger className="w-44 h-12 text-base text-black px-4 py-2">
+                  <SelectTrigger className="w-full sm:w-44 h-12 text-base text-black px-4 py-2">
                     <SelectValue placeholder="Zona" />
                   </SelectTrigger>
                   <SelectContent className="text-sm text-black max-h-60 overflow-auto">
@@ -140,11 +147,10 @@ const Dashboard = () => {
                     ))}
                   </SelectContent>
                 </Select>
-
               </div>
 
               {/* Especie */}
-              <div className="text-xl bg-white max-w-[160px] rounded-lg">
+              <div className="bg-white rounded-lg w-full sm:w-auto">
                 <Select
                   value={selectedSpecies}
                   onValueChange={(value) => {
@@ -152,7 +158,7 @@ const Dashboard = () => {
                     setSelectedAnimal("");
                   }}
                 >
-                  <SelectTrigger className="w-44 h-12 text-base text-black px-4 py-2">
+                  <SelectTrigger className="w-full sm:w-44 h-12 text-base text-black px-4 py-2">
                     <SelectValue placeholder="Especie" />
                   </SelectTrigger>
                   <SelectContent className="text-sm text-black max-h-60 overflow-auto">
@@ -166,13 +172,13 @@ const Dashboard = () => {
               </div>
 
               {/* Animal */}
-              <div className="text-xl bg-white max-w-[160px] rounded-lg">
+              <div className="bg-white rounded-lg w-full sm:w-auto">
                 <Select
                   value={selectedAnimal}
                   onValueChange={setSelectedAnimal}
                   disabled={!selectedSpecies}
                 >
-                  <SelectTrigger className="w-44 h-12 text-base text-black px-4 py-2">
+                  <SelectTrigger className="w-full sm:w-44 h-12 text-base text-black px-4 py-2">
                     <SelectValue placeholder="Animal" />
                   </SelectTrigger>
                   <SelectContent className="text-sm text-black max-h-60 overflow-auto">
@@ -186,13 +192,13 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Gráfico de barras normal */}
+            {/* Gráfico de barras */}
             <Card className="w-full">
-              <CardContent className="p-4">
-                <h3 className="font-bold mb-4 text-black">
+              <CardContent className="p-3 md:p-4">
+                <h3 className="font-bold mb-3 md:mb-4 text-black">
                   Existencia por Zona y Especie
                 </h3>
-                <div className="w-full h-[300px]">
+                <div className="w-full h-[250px] md:h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={
@@ -220,33 +226,35 @@ const Dashboard = () => {
               </CardContent>
             </Card>
 
-            {/* Tabla de conteo */}
-            <CoutingPresenceTable />
+            {/* Tabla */}
+            <div className="overflow-x-auto">
+              <CoutingPresenceTable />
+            </div>
 
-            {/* Cards resumen */}
-            <div className="grid grid-cols-4 gap-4 text-black">
+            {/* Resumen */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 text-black">
               <Card>
-                <CardContent className="p-4">
-                  <p>Ganado Total</p>
-                  <h2 className="text-2xl font-bold">100</h2>
+                <CardContent className="p-3 md:p-4">
+                  <p className="text-sm md:text-base">Ganado Total</p>
+                  <h2 className="text-xl md:text-2xl font-bold">100</h2>
                 </CardContent>
               </Card>
               <Card>
-                <CardContent className="p-4">
-                  <p>Ganado Faltante</p>
-                  <h2 className="text-2xl font-bold">2</h2>
+                <CardContent className="p-3 md:p-4">
+                  <p className="text-sm md:text-base">Ganado Faltante</p>
+                  <h2 className="text-xl md:text-2xl font-bold">2</h2>
                 </CardContent>
               </Card>
               <Card>
-                <CardContent className="p-4">
-                  <p>Hora Registro</p>
-                  <h2 className="text-2xl font-bold">16:00</h2>
+                <CardContent className="p-3 md:p-4">
+                  <p className="text-sm md:text-base">Hora Registro</p>
+                  <h2 className="text-xl md:text-2xl font-bold">16:00</h2>
                 </CardContent>
               </Card>
               <Card>
-                <CardContent className="p-4">
-                  <p>Personal</p>
-                  <h2 className="text-2xl font-bold">Juanito Perez</h2>
+                <CardContent className="p-3 md:p-4">
+                  <p className="text-sm md:text-base">Personal</p>
+                  <h2 className="text-xl md:text-2xl font-bold">Juanito Perez</h2>
                 </CardContent>
               </Card>
             </div>

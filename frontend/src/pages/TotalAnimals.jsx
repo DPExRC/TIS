@@ -2,10 +2,9 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
 import Navbar from "../components/NavBar";
-import Sidebar from "../components/SideBar"; // Asegúrate que este componente exista
+import Sidebar from "../components/SideBar";
 import { Card, CardContent } from "../components/Card";
 import { Pencil, Trash2 } from "lucide-react";
-import "../styles/TotalAnimals.css";
 
 const TotalAnimals = () => {
   const [animalsData, setAnimalsData] = useState({});
@@ -14,22 +13,43 @@ const TotalAnimals = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const fetchAndGroupAnimals = async () => {
+    try {
+      const response = await axios.get("http://127.0.0.1:8000/animales/total/");
+      if (Array.isArray(response.data)) {
+        const agrupado = {};
+
+        response.data.forEach((animal) => {
+          const especie = animal.especie || "Desconocida";
+          const subespecie = animal.animal || "Desconocida";
+
+          if (!agrupado[especie]) {
+            agrupado[especie] = {};
+          }
+
+          if (!agrupado[especie][subespecie]) {
+            agrupado[especie][subespecie] = [];
+          }
+
+          agrupado[especie][subespecie].push({
+            code: animal.codigo,
+            birthday: animal.fecha_nacimiento ? animal.fecha_nacimiento.split("T")[0] : "N/A",
+          });
+        });
+
+        setAnimalsData(agrupado);
+        setFilteredData(agrupado);
+      } else {
+        setError("Formato de datos no válido.");
+      }
+    } catch {
+      setError("Error al cargar los datos.");
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    axios
-      .get("http://127.0.0.1:8000/animales/")
-      .then((response) => {
-        if (response.data && response.data.animales) {
-          setAnimalsData(response.data.animales);
-          setFilteredData(response.data.animales);
-        } else {
-          setError("No se pudo obtener información de los animales.");
-        }
-        setLoading(false);
-      })
-      .catch(() => {
-        setError("Error al cargar los datos.");
-        setLoading(false);
-      });
+    fetchAndGroupAnimals();
   }, []);
 
   useEffect(() => {
@@ -52,13 +72,64 @@ const TotalAnimals = () => {
     }
   }, [searchTerm, animalsData]);
 
-  const handleEdit = (animal) => {
-    const nuevoNacimiento = prompt(
-      `Editar fecha de nacimiento para ${animal.code}:`,
-      animal.birthday
-    );
-    if (nuevoNacimiento && nuevoNacimiento !== animal.birthday) {
-      console.log(`Actualizar ${animal.code} a ${nuevoNacimiento}`);
+  // Función para convertir la fecha 'YYYY-MM-DD' en formato local para evitar desfase
+  const fechaLocalString = (fechaUTC) => {
+    if (!fechaUTC) return "";
+
+    const [year, month, day] = fechaUTC.split("-");
+    const date = new Date(year, month - 1, day); // Date en zona local
+
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+
+    return `${y}-${m}-${d}`;
+  };
+
+  const handleEdit = async (animal) => {
+    const { value: nuevaFecha } = await Swal.fire({
+      title: `Editar fecha de nacimiento`,
+      input: "date",
+      inputLabel: `Fecha actual: ${animal.birthday}`,
+      inputValue: fechaLocalString(animal.birthday),
+      showCancelButton: true,
+      confirmButtonText: "Guardar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (nuevaFecha && nuevaFecha !== animal.birthday) {
+      try {
+        const response = await fetch("http://127.0.0.1:8000/animales/editar/", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            codigo: animal.code,
+            fecha_nacimiento: nuevaFecha,
+          }),
+        });
+
+        if (response.ok) {
+          await Swal.fire({
+            title: "Actualizado",
+            text: "Fecha de nacimiento modificada.",
+            icon: "success",
+            confirmButtonText: "OK",
+          });
+          fetchAndGroupAnimals();
+        } else {
+          const data = await response.json();
+          throw new Error(data.error || "Error al actualizar.");
+        }
+      } catch (error) {
+        await Swal.fire({
+          title: "Error inesperado",
+          text: error.message,
+          icon: "error",
+          confirmButtonText: "OK",
+        });
+      }
     }
   };
 
@@ -77,7 +148,7 @@ const TotalAnimals = () => {
     if (!confirmar.isConfirmed) return;
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/eliminar-animal/", {
+      const response = await fetch("http://127.0.0.1:8000/animales/eliminar/", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -97,13 +168,9 @@ const TotalAnimals = () => {
           icon: "success",
           confirmButtonText: "OK",
         });
+        fetchAndGroupAnimals();
       } else {
-        await Swal.fire({
-          title: "Error",
-          text: data.error || "No se pudo eliminar el animal.",
-          icon: "error",
-          confirmButtonText: "OK",
-        });
+        throw new Error(data.error || "No se pudo eliminar.");
       }
     } catch (error) {
       await Swal.fire({
@@ -118,16 +185,13 @@ const TotalAnimals = () => {
   return (
     <div className="flex min-h-screen bg-gray-100">
       <Sidebar />
-
       <div className="flex flex-col flex-grow">
         <Navbar />
-
         <div className="ml-50 bg-gradient-to-r from-blue-400 to-blue-700 text-white py-12 shadow-md">
           <div className="px-6">
             <h1 className="text-2xl font-semibold">Total de animales registrados</h1>
           </div>
         </div>
-
         <div className="ml-64 p-6 space-y-6">
           <div className="max-w-screen-xl mx-auto px-4">
             <input
@@ -138,10 +202,8 @@ const TotalAnimals = () => {
               className="w-full md:w-1/3 px-4 py-2 rounded-md border border-gray-300 text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-
           {loading && <p className="text-gray-500">Cargando...</p>}
           {error && <p className="text-red-500">{error}</p>}
-
           {!loading && !error && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {Object.entries(filteredData).map(([especie, subespecies]) => (
@@ -152,9 +214,7 @@ const TotalAnimals = () => {
                       ([subespecie, listaAnimales]) =>
                         Array.isArray(listaAnimales) && (
                           <div key={subespecie} className="mb-6">
-                            <h3 className="text-lg font-semibold mb-2">
-                              {subespecie}
-                            </h3>
+                            <h3 className="text-lg font-semibold mb-2">{subespecie}</h3>
                             <table className="w-full text-sm text-center text-gray-700">
                               <thead className="bg-gray-200">
                                 <tr>
@@ -165,14 +225,25 @@ const TotalAnimals = () => {
                               </thead>
                               <tbody>
                                 {listaAnimales.map((animal, index) => (
-                                  <tr key={`${especie}-${subespecie}-${index}`} className="hover:bg-gray-50">
+                                  <tr
+                                    key={`${especie}-${subespecie}-${index}`}
+                                    className="hover:bg-gray-50"
+                                  >
                                     <td>{animal.code}</td>
                                     <td>{animal.birthday || "N/A"}</td>
                                     <td className="flex justify-center gap-2">
-                                      <button onClick={() => handleEdit(animal)} title="Editar" className="hover:text-blue-900" id="btnEdit">
+                                      <button
+                                        onClick={() => handleEdit(animal)}
+                                        title="Editar"
+                                        className="hover:text-blue-900"
+                                      >
                                         <Pencil size={18} />
                                       </button>
-                                      <button onClick={() => handleDelete(animal)} title="Eliminar" className="hover:text-red-700" id="btnDelete">
+                                      <button
+                                        onClick={() => handleDelete(animal)}
+                                        title="Eliminar"
+                                        className="hover:text-red-700"
+                                      >
                                         <Trash2 size={18} />
                                       </button>
                                     </td>

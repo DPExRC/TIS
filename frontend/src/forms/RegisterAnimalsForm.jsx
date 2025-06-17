@@ -1,142 +1,96 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
-import "../styles/RegisterAnimalsForm.css";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const RegisterAnimalsForm = () => {
   const [formData, setFormData] = useState({
-    species: '',
+    especie: '',
     animal: '',
-    birthday: '',
-    code: ''
+    fecha_nacimiento: '',
+    codigo: ''
   });
 
-  const [codeGenerated, setCodeGenerated] = useState(false);
-  const [speciesOptions, setSpeciesOptions] = useState({});
-  const [codeMap, setCodeMap] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-
-  useEffect(() => {
-    axios.get('http://127.0.0.1:8000/animales/')
-      .then(response => {
-        if (response.data?.animales) {
-          const data = response.data.animales;
-          setSpeciesOptions(data);
-
-          const generatedMap = {};
-          for (const generalSpecies of Object.keys(data)) {
-            const prefix = generalSpecies.substring(0, 2).toUpperCase();
-            const subSpecies = Object.keys(data[generalSpecies]);
-            generatedMap[generalSpecies] = {};
-
-            subSpecies.forEach((animal, index) => {
-              const base = (index + 1) * 1000;
-              generatedMap[generalSpecies][animal] = {
-                codeBase: base,
-                prefix
-              };
-            });
-          }
-
-          setCodeMap(generatedMap);
-        }
-      })
-      .catch(error => console.error('Error al obtener especies:', error));
-  }, []);
-
-  useEffect(() => {
-    const { species, animal } = formData;
-    if (species && animal) {
-      const codeInfo = codeMap[species]?.[animal];
-      if (codeInfo) {
-        setFormData(prev => ({
-          ...prev,
-          code: `${codeInfo.prefix}-${codeInfo.codeBase}`
-        }));
-        setCodeGenerated(true);
-        setErrorMsg('');
-      } else {
-        setFormData(prev => ({ ...prev, code: '' }));
-        setCodeGenerated(false);
-        setErrorMsg('El animal seleccionado no pertenece a la especie elegida.');
-      }
-    } else {
-      setFormData(prev => ({ ...prev, code: '' }));
-      setCodeGenerated(false);
-      setErrorMsg('');
-    }
-  }, [formData.species, formData.animal, codeMap]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value,
-      ...(name === 'species' ? { animal: '' } : {})
+      [name]: value
     }));
+  };
+
+  const mostrarNotificacion = (datos) => {
+    toast.success(
+      <div>
+        <strong>Animal registrado:</strong><br />
+        Código: {datos.codigo}<br />
+        Especie: {datos.especie}<br />
+        Animal: {datos.animal}<br />
+        Fecha Nacimiento: {datos.fecha_nacimiento}
+      </div>,
+      {
+        position: 'top-right',
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined
+      }
+    );
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setErrorMsg('');
+
     try {
-      const response = await axios.post('http://127.0.0.1:8000/registro-animales/', formData);
-      console.log('Animal registrado exitosamente:', response.data);
-      setFormData({ species: '', animal: '', birthday: '', code: '' });
-      setCodeGenerated(false);
-      setErrorMsg('');
+      const { especie, animal, fecha_nacimiento } = formData;
+
+      const response = await axios.post('http://127.0.0.1:8000/animales/registrar/', {
+        especie,
+        animal,
+        fecha_nacimiento
+      });
+
+      const codigoGenerado = response.data.codigo;
+
+      const datosRegistrados = {
+        ...formData,
+        codigo: codigoGenerado
+      };
+
+      setFormData({
+        especie: '',
+        animal: '',
+        fecha_nacimiento: '',
+        codigo: ''
+      });
+
+      mostrarNotificacion(datosRegistrados);
     } catch (error) {
-      console.error('Error al registrar animal:', error);
+      console.error('Error:', error);
+      setErrorMsg('Error al registrar. Verifica los datos.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const animalOptions = speciesOptions[formData.species]
-    ? Object.keys(speciesOptions[formData.species]).filter(key => key !== "registro")
-    : [];
-
   return (
-    <div className="max-w-xl mx-auto bg-white text-black shadow-md rounded-xl p-6">
+    <div className="max-w-xl mx-auto bg-white text-black shadow-md rounded-xl p-6 relative">
+      <ToastContainer />
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="species" className="block text-sm font-medium mb-1">Especie</label>
-          <select
-            id="species"
-            name="species"
-            value={formData.species}
-            onChange={handleChange}
-            className="w-full p-2 border border-gray-300 rounded"
-            required
-          >
-            <option value="">Seleccione una especie</option>
-            {Object.keys(speciesOptions).map((specie) => (
-              <option key={specie} value={specie}>{specie}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="animal" className="block text-sm font-medium mb-1">Animal</label>
-          <select
-            id="animal"
-            name="animal"
-            value={formData.animal}
-            onChange={handleChange}
-            className="w-full p-2 border border-gray-300 rounded"
-            required
-            disabled={!formData.species}
-          >
-            <option value="">Seleccione un animal</option>
-            {animalOptions.map((animal) => (
-              <option key={animal} value={animal}>{animal}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="birthday" className="block text-sm font-medium mb-1">Fecha de nacimiento</label>
+          <label htmlFor="especie" className="block text-sm font-medium mb-1">Especie</label>
           <input
-            type="date"
-            id="birthday"
-            name="birthday"
-            value={formData.birthday}
+            type="text"
+            id="especie"
+            name="especie"
+            value={formData.especie}
             onChange={handleChange}
             className="w-full p-2 border border-gray-300 rounded"
             required
@@ -144,14 +98,28 @@ const RegisterAnimalsForm = () => {
         </div>
 
         <div>
-          <label htmlFor="code" className="block text-sm font-medium mb-1">Código generado</label>
+          <label htmlFor="animal" className="block text-sm font-medium mb-1">Animal</label>
           <input
             type="text"
-            id="code"
-            name="code"
-            value={formData.code}
-            readOnly
-            className="w-full p-2 border bg-gray-100 border-gray-300 rounded"
+            id="animal"
+            name="animal"
+            value={formData.animal}
+            onChange={handleChange}
+            className="w-full p-2 border border-gray-300 rounded"
+            required
+          />
+        </div>
+
+        <div>
+          <label htmlFor="fecha_nacimiento" className="block text-sm font-medium mb-1">Fecha de nacimiento</label>
+          <input
+            type="date"
+            id="fecha_nacimiento"
+            name="fecha_nacimiento"
+            value={formData.fecha_nacimiento}
+            onChange={handleChange}
+            className="w-full p-2 border border-gray-300 rounded"
+            required
           />
         </div>
 
@@ -159,16 +127,14 @@ const RegisterAnimalsForm = () => {
           <p className="text-sm text-red-600">{errorMsg}</p>
         )}
 
-        {formData.species && formData.animal && formData.birthday && codeGenerated ? (
-          <button
-            type="submit"
-            className="w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition"
-          >
-            Registrar
-          </button>
-        ) : (
-          <p className="text-sm text-gray-500">Complete especie, animal y fecha para habilitar el registro.</p>
-        )}
+        <button
+          type="submit"
+          className={`w-full py-2 px-4 rounded transition 
+            ${isSubmitting ? 'bg-gray-400 cursor-wait text-white' : 'bg-green-600 hover:bg-green-700 text-white'}`}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Registrando...' : 'Registrar'}
+        </button>
       </form>
     </div>
   );

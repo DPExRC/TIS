@@ -1,341 +1,201 @@
-import requests
+import base64
+from io import BytesIO
+from datetime import datetime
+from barcode import Code128
+from barcode.writer import ImageWriter
+from google.cloud import firestore
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.decorators import api_view
 from rest_framework import status
-from firebase_config import db
-from firebase_admin import firestore
-from google.cloud import firestore
-from django.utils import timezone
+from .serializers import AnimalSerializer
 
-class ObtenerAnimales(APIView):
-    def get(self, request):
-        try:
-            animales_ref = db.collection('Animales')
-            documentos = animales_ref.stream()
+class RegistrarAnimalAPIView(APIView):
+    """Endpoint para registrar nuevos animales con generación de código de barras"""
 
-            resultado = {}
-
-            for doc in documentos:
-                especie = doc.id
-                resultado[especie] = {}
-
-                subcolecciones = doc.reference.collections()
-
-                for subcol in subcolecciones:
-                    animal = subcol.id
-                    registros = subcol.stream()
-                    resultado[especie][animal] = []
-
-                    for registro in registros:
-                        datos = registro.to_dict()
-                        resultado[especie][animal].append({
-                            'code': registro.id,
-                            'birthday': datos.get('birthday')
-                        })
-
-            return Response({"animales": resultado}, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-class RegistrarAnimales(APIView):
     def post(self, request):
         try:
-            datos = request.data
+            data = request.data.copy()
+            especie = data.get('especie')
+            
+            # Validación básica
+            if not especie or not isinstance(especie, str) or len(especie.strip()) < 2:
+                return Response(
+                    {'error': 'Especie requerida (mínimo 2 caracteres)'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-            species = datos.get('species')
-            animal = datos.get('animal')
-            code = datos.get('code')
-            birthday = datos.get('birthday')
+            # Generar código único
+            codigo = self.generar_codigo_unico(especie.strip())
+            data['codigo'] = codigo
 
-            if not all([species, animal, code, birthday]):
-                return Response({"error": "Faltan datos requeridos."}, status=status.HTTP_400_BAD_REQUEST)
+            # Validar y guardar
+            serializer = AnimalSerializer(data=data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
 
-            # Guardar el birthday del animal
-            especie_ref = db.collection('Animales').document(species)
-            animal_ref = especie_ref.collection(animal)
-            animal_ref.document(code).set({
-                'birthday': birthday
-            })
+            # Generar código de barras
+            barcode_base64 = self.generar_codigo_barras_base64(codigo)
+            if not barcode_base64:
+                raise ValueError("Error al generar código de barras")
 
-            # Guardar el código en el array 'codigos' del documento 'existencia'
-            codigos_ref = db.collection('codigos').document('existencia')
-            codigos_ref.set({
-                'codigos': firestore.ArrayUnion([code])
-            }, merge=True)
+            # Preparar respuesta
+            response_data = serializer.data
+            response_data['barcode_png_base64'] = barcode_base64
 
+            return Response(response_data, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
             return Response(
-                {"mensaje": f"Animal registrado en '{species}/{animal}' y código añadido a codigos/existencia.codigos."},
-                status=status.HTTP_201_CREATED
+                {'error': str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    def generar_codigo_unico(self, especie):
+        """Genera un código único basado en la especie"""
+        db = firestore.Client()
+        coleccion = db.collection('RegistroAnimales')
 
-class CantidadAnimales(APIView):
-    def get(self, request):
-        try:
-            cantidad_ref = db.collection('CantidadAnimales')
-            documentos_zonas = cantidad_ref.stream()
+        # Consulta optimizada
+        docs = coleccion.where('especie', '==', especie).select(['codigo']).stream()
 
-            resultado = {}
-
-            for zona_doc in documentos_zonas:
-                zona = zona_doc.id
-                resultado[zona] = {}
-
-                subcolecciones = zona_doc.reference.collections()
-
-                for especie in subcolecciones:
-                    nombre_especie = especie.id
-                    resultado[zona][nombre_especie] = {}
-
-                    animales = especie.stream()
-
-                    for animal_doc in animales:
-                        nombre_animal = animal_doc.id
-                        datos = animal_doc.to_dict()
-
-                        resultado[zona][nombre_especie][nombre_animal] = {
-                            'Cantidad': datos.get('Cantidad'),
-                            'FechaConteo': datos.get('FechaConteo')
-                        }
-
-            return Response({"CantidadAnimales": resultado}, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-class RegistrarExistenciaAnimales(APIView):
-    animal_codes = {
-        "Vacas": 1000, "Toros": 2000, "Terneros": 3000, "Cerdos": 1000,
-        "Lechones": 2000, "Cabras": 1000, "Corderos": 1000, "Ovejas": 2000,
-        "Caballos": 1000, "Burros": 2000, "Gallinas": 1000, "Gallos": 2000,
-        "Gansos": 3000, "Pavos": 4000, "Patos": 1000, "Patas": 2000,
-        "Ovejas merinas": 1000, "Carneros": 2000
-    }
-
-    especie_prefix_map = {
-        "PO": "Porcino", "VA": "Vacunos", "EQ": "Equinos", "AV": "Avícolas",
-        "OV": "Ovinos", "CA": "Caprinos"
-        # Agrega más si necesitas
-    }
-
-    def post(self, request):
-        try:
-            datos = request.data
-            codigo = datos.get('codigo')
-            zona = datos.get('zona')
-            registrado_por = datos.get('RegistradoPor')
-
-            if not all([codigo, zona, registrado_por]):
-                return Response({"error": "Faltan datos requeridos."}, status=400)
-
-            # Validar código en codigos/existencia/codigos
-            codigos_ref = db.collection('codigos').document('existencia')
-            codigos_doc = codigos_ref.get()
-
-            if not codigos_doc.exists:
-                return Response({"error": "No existe el documento de códigos registrados."}, status=404)
-
-            codigos_array = codigos_doc.to_dict().get('codigos', [])
-            if codigo not in codigos_array:
-                return Response({"error": f"El código '{codigo}' no está registrado."}, status=400)
-
-            # Inferir especie y animal desde el código
+        numeros = []
+        for doc in docs:
+            codigo = doc.id
             try:
-                prefijo, numero = codigo.split("-")
-                numero = int(numero)
-            except ValueError:
-                return Response({"error": "El formato del código es inválido. Use 'ES-XXXX'."}, status=400)
+                numero = int(codigo.split('-')[1])
+                numeros.append(numero)
+            except (IndexError, ValueError):
+                continue
 
-            especie = self.especie_prefix_map.get(prefijo)
-            if not especie:
-                return Response({"error": f"Prefijo de especie '{prefijo}' no reconocido."}, status=400)
+        nuevo_num = (max(numeros) + 1) if numeros else 1
+        return f"{especie[:2].upper()}-{nuevo_num:03d}"
 
-            # Buscar el animal correspondiente al número
-            animal = None
-            for nombre, base in self.animal_codes.items():
-                if numero >= base and numero < base + 1000:
-                    animal = nombre
-                    break
+    def generar_codigo_barras_base64(self, codigo):
+        """Genera código de barras en base64"""
+        try:
+            # Validar código
+            if not codigo or not isinstance(codigo, str):
+                raise ValueError("Código inválido para generación de código de barras")
 
-            if not animal:
-                return Response({"error": f"No se encontró un animal válido para el número '{numero}'."}, status=400)
+            buffer = BytesIO()
+            
+            # Configuración del código de barras - FORMA CORRECTA
+            code128 = Code128(
+                codigo,
+                writer=ImageWriter()
+            )
+            
+            # Las opciones se pasan en el método write()
+            code128.write(buffer, {
+                'write_text': False,
+                'quiet_zone': 2.0,
+                'module_width': 0.3,
+                'module_height': 15.0,
+                'font_size': 10,
+                'text_distance': 1.5
+            })
+            
+            buffer.seek(0)
+            
+            # Verificar que se generó contenido
+            if buffer.getbuffer().nbytes == 0:
+                raise ValueError("El código de barras generado está vacío")
+                
+            return base64.b64encode(buffer.getvalue()).decode('utf-8')
+            
+        except Exception as e:
+            print(f"Error generando código de barras: {str(e)}")
+            return None
 
-            # Referencia base para existencia
-            base_ref = (
-                db.collection('Existencia')
-                .document(zona)
-                .collection(especie)
-                .document(animal)
+
+class ListarAnimalesAPIView(APIView):
+    """Endpoint para listar todos los animales registrados"""
+
+    def get(self, request):
+        try:
+            db = firestore.Client()
+            docs = db.collection('RegistroAnimales').stream()
+
+            animales = [doc.to_dict() for doc in docs]
+            return Response(animales, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(
+                {'error': f"Error al listar animales: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-            # Obtener el registro actual
-            actual_doc = base_ref.collection('Registros').document('actual').get()
-            actual_data = actual_doc.to_dict() if actual_doc.exists else {}
 
-            # Mover 'actual' a 'anterior'
-            if actual_data:
-                base_ref.collection('Registros').document('anterior').set(actual_data)
+@api_view(['PUT'])
+def Editar(request):
+    """Endpoint para editar la fecha de nacimiento de un animal"""
+    try:
+        codigo = request.data.get('codigo')
+        nueva_fecha = request.data.get('fecha_nacimiento')
 
-            # Guardar el nuevo registro como 'actual'
-            base_ref.collection('Registros').document('actual').set({
-                'FechaReporte': firestore.SERVER_TIMESTAMP,
-                'RegistradoPor': registrado_por,
-                'codigos': firestore.ArrayUnion([codigo])
-            })
-
-            return Response({
-                "mensaje": f"Registro actualizado para {especie} / {animal} con código {codigo}."
-            }, status=201)
-
-        except Exception as e:
-            return Response({"error": str(e)}, status=500)
-
-
-
-class CompararCodigos(APIView):
-    def get(self, request):
-        try:
-            # 1. Obtener datos de tu propia API localmente
-            response = requests.get('http://localhost:8000/obtener-existencia/')
-            data = response.json()
-
-            anterior = data.get('anterior', {})
-            actual = data.get('actual', {})
-
-            resultados = {}
-
-            for zona in actual:
-                if zona not in anterior:
-                    continue
-
-                resultados[zona] = {}
-                for especie in actual[zona]:
-                    if especie not in anterior[zona]:
-                        continue
-
-                    resultados[zona][especie] = {}
-                    for animal in actual[zona][especie]:
-                        if animal not in anterior[zona][especie]:
-                            continue
-
-                        codigos_actual = set(actual[zona][especie][animal].get("codigos", []))
-                        codigos_anterior = set(anterior[zona][especie][animal].get("codigos", []))
-
-                        mismos_codigos = codigos_actual == codigos_anterior
-                        misma_cantidad = len(codigos_actual) == len(codigos_anterior)
-
-                        resultados[zona][especie][animal] = {
-                            "misma_cantidad": misma_cantidad,
-                            "mismos_codigos": mismos_codigos,
-                            "total_actual": len(codigos_actual),
-                            "total_anterior": len(codigos_anterior),
-                            "diferencias": {
-                                "nuevos": list(codigos_actual - codigos_anterior),
-                                "faltantes": list(codigos_anterior - codigos_actual),
-                            }
-                        }
-
-            return Response(resultados)
-
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    
-class ObtenerExistenciaAnimales(APIView):
-    def get(self, request):
-        try:
-            existencia_ref = db.collection('Existencia')
-            zonas = existencia_ref.stream()
-
-            resultado = {
-                "anterior": {},
-                "actual": {}
-            }
-
-            for zona_doc in zonas:
-                zona = zona_doc.id
-                resultado["anterior"][zona] = {}
-                resultado["actual"][zona] = {}
-
-                especies = zona_doc.reference.collections()
-
-                for especie_col in especies:
-                    especie = especie_col.id
-                    resultado["anterior"][zona][especie] = {}
-                    resultado["actual"][zona][especie] = {}
-
-                    documentos = list(especie_col.stream())
-
-                    for doc in documentos:
-                        tipo_animal = doc.id
-                        registros_ref = doc.reference.collection("Registros")
-
-                        for tipo_registro in ["anterior", "actual"]:
-                            registro_doc = registros_ref.document(tipo_registro).get()
-                            if registro_doc.exists:
-                                datos = registro_doc.to_dict()
-                                codigos = datos.get("codigos", [])
-                                resultado[tipo_registro][zona][especie][tipo_animal] = {
-                                    "FechaReporte": datos.get("FechaReporte"),
-                                    "RegistradoPor": datos.get("RegistradoPor"),
-                                    "codigos": codigos,
-                                    "total": len(codigos)
-                                }
-                            else:
-                                # Entrada con total=0 si no hay documento
-                                resultado[tipo_registro][zona][especie][tipo_animal] = {
-                                    "FechaReporte": None,
-                                    "RegistradoPor": None,
-                                    "codigos": [],
-                                    "total": 0
-                                }
-
-            return Response(resultado, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-class EliminarAnimales(APIView):
-    def delete(self, request):
-        datos = request.data
-        codigo = datos.get('codigo')
-        nacimiento = datos.get('nacimiento')
-
-        if not codigo or not nacimiento:
+        if not codigo or not nueva_fecha:
             return Response(
-                {"error": "Los campos 'codigo' y 'nacimiento' son requeridos."},
+                {"error": "Código y fecha de nacimiento son requeridos"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Validar y parsear fecha
         try:
-            animales_ref = db.collection('Animales')
-            documentos = animales_ref.stream()
-
-            # Buscar el documento y subcolección que contengan el código y nacimiento
-            for doc in documentos:
-                subcolecciones = doc.reference.collections()
-
-                for subcol in subcolecciones:
-                    registros = subcol.stream()
-
-                    for registro in registros:
-                        datos_registro = registro.to_dict()
-                        if registro.id == codigo and datos_registro.get('birthday') == nacimiento:
-                            # Eliminamos el documento específico
-                            registro.reference.delete()
-                            return Response(
-                                {"message": f"Animal con código '{codigo}' eliminado correctamente."},
-                                status=status.HTTP_200_OK
-                            )
-
+            fecha_obj = datetime.strptime(nueva_fecha, "%Y-%m-%d")
+            if fecha_obj > datetime.now():
+                raise ValueError("La fecha no puede ser futura")
+        except ValueError as e:
             return Response(
-                {"error": "No se encontró ningún animal que coincida con los datos proporcionados."},
+                {"error": f"Fecha inválida: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        db = firestore.Client()
+        doc_ref = db.collection("RegistroAnimales").document(codigo)
+        
+        if not doc_ref.get().exists:
+            return Response(
+                {"error": "Animal no encontrado"},
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        doc_ref.update({'fecha_nacimiento': fecha_obj})
+        return Response({"message": "Fecha actualizada correctamente"})
+
+    except Exception as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['DELETE'])
+def Eliminar(request):
+    """Endpoint para eliminar un animal"""
+    try:
+        codigo = request.data.get('codigo')
+
+        if not codigo:
+            return Response(
+                {"error": "Código requerido"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        db = firestore.Client()
+        doc_ref = db.collection("RegistroAnimales").document(codigo)
+
+        if not doc_ref.get().exists:
+            return Response(
+                {"error": "Animal no encontrado"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        doc_ref.delete()
+        return Response({"message": "Animal eliminado correctamente"})
+
+    except Exception as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
