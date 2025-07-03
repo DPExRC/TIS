@@ -1,66 +1,50 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
-import { Bell, User } from "lucide-react";
-import axios from "axios";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { Bell, User, Menu } from "lucide-react";
+import Notificaciones from "../components/Notifications";
 import logo from "../assets/logo.png";
 
-const Navbar = () => {
+const Navbar = ({ toggleSidebar }) => {
   const navigate = useNavigate();
   const auth = getAuth();
   const [username, setUsername] = useState("");
   const [notificacionesAbiertas, setNotificacionesAbiertas] = useState(false);
   const [alertas, setAlertas] = useState([]);
+  const [cargandoAlertas, setCargandoAlertas] = useState(true);
+  const [errorAlertas, setErrorAlertas] = useState(null);
 
+  // Efecto para obtener el usuario actual
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUsername(user.displayName || user.email);
-      }
+      if (user) setUsername(user.displayName || user.email);
     });
     return () => unsubscribe();
   }, [auth]);
 
-  // Carga las alertas con la misma lógica que en Alerts.jsx
+  // Efecto para cargar las alertas
   useEffect(() => {
-    axios.get("http://127.0.0.1:8000/comparar/").then((res) => {
-      const data = res.data;
-      const alertasGeneradas = [];
-
-      let id = 1;
-      for (const zona in data) {
-        for (const especie in data[zona]) {
-          for (const tipo in data[zona][especie]) {
-            const registro = data[zona][especie][tipo];
-            if (!registro.misma_cantidad || !registro.mismos_codigos) {
-              const severidad =
-                registro.total_anterior === 0 || registro.total_actual === 0
-                  ? "alta"
-                  : "media";
-
-              const descripcion = `Anteriores ${registro.total_anterior}, actuales ${registro.total_actual}.\nNuevos: ${registro.diferencias.nuevos.join(
-                ", "
-              )}.\nFaltantes: ${registro.diferencias.faltantes.join(", ")}`;
-
-              alertasGeneradas.push({
-                id: id++,
-                titulo: `Discrepancia en ${zona} - ${tipo}`,
-                descripcion,
-                fecha: new Date().toISOString().split("T")[0],
-                severidad,
-              });
-            }
-          }
-        }
+    const fetchAlertas = async () => {
+      setCargandoAlertas(true);
+      try {
+        const res = await fetch("http://localhost:8000/alertas/list/");
+        if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
+        const data = await res.json();
+        setAlertas(data);
+      } catch (error) {
+        setErrorAlertas(error.message);
+        setAlertas([]);
+      } finally {
+        setCargandoAlertas(false);
       }
-      setAlertas(alertasGeneradas);
-    });
+    };
+    fetchAlertas();
   }, []);
 
-  const toggleNotificaciones = () => {
-    setNotificacionesAbiertas((prev) => !prev);
-  };
+  // Toggle para mostrar/ocultar notificaciones
+  const toggleNotificaciones = () => setNotificacionesAbiertas((prev) => !prev);
 
+  // Cerrar notificaciones al hacer click fuera
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (!e.target.closest("#notificationWrapper")) {
@@ -71,89 +55,60 @@ const Navbar = () => {
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
+  // Calcular cantidad de alertas para el badge
+  const cantidadAlertas = alertas.length;
+  const textoBadge = cantidadAlertas > 4 ? "4+" : cantidadAlertas.toString();
+
   return (
     <>
+      {/* Barra de navegación principal */}
       <nav className="fixed top-0 left-0 w-full bg-blue-600 p-4 shadow-md z-50">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link to="/panel" className="flex items-center space-x-2">
+          {/* Botón hamburguesa (solo visible en móvil) */}
+          <button
+            onClick={toggleSidebar}
+            className="md:hidden text-white mr-4 p-1 rounded hover:bg-blue-800"
+            aria-label="Abrir menú lateral"
+          >
+            <Menu size={24} />
+          </button>
+
+          {/* Logo de la aplicación */}
+          <Link to="/panel" className="fflex items-center space-x-2 flex-shrink-0 min-w-[120px]">
             <img src={logo} alt="Logo" className="h-10 w-auto" />
           </Link>
 
-          <div className="hidden md:flex space-x-6">
-            <Link
-              to="/ganado"
-              className="text-white hover:text-blue-200 font-medium transition-all duration-200 hover:scale-105"
-            >
-              Ganado
-            </Link>
-            <Link
-              to="/reportes"
-              className="text-white hover:text-blue-200 font-medium transition-all duration-200 hover:scale-105"
-            >
-              Reportes
-            </Link>
-          </div>
 
+
+          {/* Sección de iconos (notificaciones y perfil) */}
           <div className="flex items-center space-x-4">
+            {/* Contenedor de notificaciones */}
             <div className="relative" id="notificationWrapper">
               <button
                 onClick={toggleNotificaciones}
-                className="text-white hover:text-blue-200 transition-colors p-1 rounded-full hover:bg-blue-800"
+                className="relative text-white hover:text-blue-200 transition-colors p-1 rounded-full hover:bg-blue-800"
                 aria-label="Notificaciones"
               >
                 <Bell size={20} />
-                {alertas.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
-                    {alertas.length}
+                {/* Badge de notificaciones no leídas */}
+                {cantidadAlertas > 0 && (
+                  <span
+                    className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full select-none"
+                    style={{ minWidth: "18px", height: "18px" }}
+                  >
+                    {textoBadge}
                   </span>
                 )}
               </button>
-
-              {notificacionesAbiertas && (
-                <div className="absolute right-0 mt-2 w-96 max-h-64 overflow-y-auto bg-white text-black rounded-md shadow-xl z-50 border border-gray-200">
-                  <div className="p-4 font-semibold border-b text-gray-700 flex justify-between items-center">
-                    <span>🔔 Notificaciones</span>
-                    <span className="text-sm text-gray-500">{alertas.length} alertas</span>
-                  </div>
-                  <ul className="divide-y text-sm">
-                    {alertas.length === 0 ? (
-                      <li className="p-3 text-gray-500">No hay nuevas notificaciones.</li>
-                    ) : (
-                      alertas.map(({ id, titulo, descripcion, fecha, severidad }) => (
-                        <li key={id} className="p-3 hover:bg-gray-100">
-                          <strong>{titulo}</strong>
-                          <p className="whitespace-pre-line text-gray-700 text-xs mt-1">{descripcion}</p>
-                          <p className="text-gray-400 text-xs mt-1">{fecha}</p>
-                          <span
-                            className={`inline-block mt-1 px-2 py-0.5 rounded text-white text-xs ${
-                              severidad === "alta"
-                                ? "bg-red-600"
-                                : severidad === "media"
-                                ? "bg-yellow-500"
-                                : "bg-blue-500"
-                            }`}
-                          >
-                            {severidad.toUpperCase()}
-                          </span>
-                        </li>
-                      ))
-                    )}
-                  </ul>
-                  <Link 
-                    to="/alertas"
-                    className="block text-center text-blue-600 text-sm py-2 hover:underline cursor-pointer"
-                  >
-                    Ver todas
-                  </Link>
-                </div>
-              )}
+              {/* Componente de notificaciones desplegable */}
+              <Notificaciones abiertas={notificacionesAbiertas} />
             </div>
 
+            {/* Botón de perfil de usuario */}
             <button
               onClick={() => navigate("/perfil")}
               className="flex items-center space-x-2 text-white hover:text-blue-200 focus:outline-none transition-colors p-1 rounded-full hover:bg-blue-800 font-medium"
               aria-label="Ir al perfil"
-              title="Ir al perfil"
             >
               <User size={20} />
               <span className="hidden md:inline">{username}</span>
@@ -161,6 +116,8 @@ const Navbar = () => {
           </div>
         </div>
       </nav>
+      
+      {/* Espacio para compensar la altura fija del navbar */}
       <div className="h-16" />
     </>
   );

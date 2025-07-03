@@ -1,20 +1,16 @@
-import {
-  Home,
-  BarChart2,
-  Users,
-  Settings,
-  LogOut,
-  Footprints,
-  FileText,
-  AlertTriangle,
-  TriangleAlert,
-} from "lucide-react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
 import { getAuth, signOut } from "firebase/auth";
-import React from "react";
+import { Home, Clock4, FileText, LogOut, Footprints, Map } from "lucide-react";
 
-const SidebarItem = ({ icon, label, onClick, children, hoverClass = "hover:bg-blue-600 hover:text-white" }) => {
+// Componente para items del sidebar
+const SidebarItem = ({ 
+  icon, 
+  label, 
+  onClick, 
+  children, 
+  hoverClass = "hover:bg-blue-600 hover:text-white" 
+}) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleClick = () => {
@@ -80,10 +76,28 @@ const SidebarItem = ({ icon, label, onClick, children, hoverClass = "hover:bg-bl
   );
 };
 
-const Sidebar = () => {
+// Componente principal del Sidebar
+const Sidebar = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const auth = getAuth();
   const [showModal, setShowModal] = useState(false);
+
+  // Cerrar sidebar al hacer clic fuera (solo móvil)
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (isOpen && !document.querySelector('.sidebar-container')?.contains(e.target)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -93,7 +107,12 @@ const Sidebar = () => {
 
   return (
     <>
-      <div className="h-screen w-50 bg-white flex flex-col fixed left-0 top-0 shadow-sm">
+      {/* Sidebar principal */}
+      <div
+        className={`sidebar-container fixed top-0 left-0 h-screen w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-50 flex flex-col
+          ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
+      >
+        {/* Contenido scrollable del sidebar */}
         <nav className="flex-1 px-4 py-20 space-y-2 overflow-y-auto">
           <SidebarItem
             icon={<Home />}
@@ -102,75 +121,50 @@ const Sidebar = () => {
           />
 
           <SidebarItem icon={<Footprints className="w-5 h-5" />} label="Ganado">
-            <li
-              onClick={() => navigate("/registroanimales")}
-              className="cursor-pointer"
-            >
+            <li onClick={() => navigate("/registroanimales")}>
               Registro de animales
             </li>
-            <li
-              onClick={() => navigate("/conteoypresencia")}
-              className="cursor-pointer"
-            >
+            <li onClick={() => navigate("/conteoypresencia")}>
               Conteo y presencia
             </li>
-
-            <li
-              onClick={() => navigate("/totalanimales")}
-              className="cursor-pointer"
-            >
+            <li onClick={() => navigate("/totalanimales")}>
               Total de animales
             </li>
+          </SidebarItem>
 
-            <li
-              onClick={() => navigate("/totalespecifico")}
-              className="cursor-pointer"
-            >
-              Total especifico
+          <SidebarItem icon={<Clock4 className="w-5 h-5" />} label="Horarios">
+            <li onClick={() => navigate("/horarios")}>
+              Horarios Disponibles
             </li>
-
-            <li
-              onClick={() => navigate("/horarios")}
-              className="cursor-pointer"
-            >
-              Horarios 
+            <li onClick={() => navigate("/asignarhorarios")}>
+              Asignar Horarios
             </li>
-            
-            <li
-              onClick={() => navigate("/scanner")}
-              className="cursor-pointer"
-            >
-              scanner
+            <li onClick={() => navigate("/totalhorarios")}>
+              Horarios Asignados
             </li>
           </SidebarItem>
 
-          <SidebarItem
-            icon={<TriangleAlert />}
-            label="Alertas"
-            onClick={() => navigate("/alertas")}
-          />
-
-          <SidebarItem icon={<FileText className="w-5 h-5" />} label="Reportes">
-            <li onClick={() => navigate("/reportes")} className="cursor-pointer">
-              Generales
+          <SidebarItem icon={<FileText className="w-5 h-5" />} label="Informes">
+            <li onClick={() => navigate("/alertas")}>
+              Alertas
             </li>
-            <li
-              onClick={() => navigate("/reportes/mensuales")}
-              className="cursor-pointer"
-            >
-              Mensuales
+            <li onClick={() => navigate("/reportes")}>
+              Reportes
+            </li>
+            <li onClick={() => navigate("/actual")}>
+              Historial
             </li>
           </SidebarItem>
 
-          <SidebarItem icon={<FileText className="w-5 h-5" />} label="Zonas">
-            <li onClick={() => navigate("/zonas")} className="cursor-pointer">
+          <SidebarItem icon={<Map className="w-5 h-5" />} label="Zonas">
+            <li onClick={() => navigate("/zonas")}>
               Zonas
             </li>
-
           </SidebarItem>
         </nav>
 
-        <div className="px-4 py-4 border-t border-gray-200">
+        {/* Pie del sidebar - FIJO EN LA PARTE INFERIOR */}
+        <div className="mt-auto px-4 py-4 border-t border-gray-200 bg-white">
           <SidebarItem
             icon={<LogOut />}
             label="Cerrar sesión"
@@ -180,7 +174,7 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* Modal de confirmación */}
+      {/* Modal de confirmación para cerrar sesión */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm text-center space-y-4">

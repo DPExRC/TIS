@@ -21,7 +21,7 @@ const Profile = () => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) setUser(user);
+      setUser(user);
     });
     return () => unsubscribe();
   }, [auth]);
@@ -46,69 +46,89 @@ const Profile = () => {
       const credential = EmailAuthProvider.credential(user.email, currentPassword);
       await reauthenticateWithCredential(user, credential);
       await updatePassword(user, newPassword);
-      setMessage("Contraseña actualizada correctamente.");
+      setMessage("✅ Contraseña actualizada correctamente.");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err) {
-      setError("Error al cambiar contraseña: " + err.message);
+      setError("Error al cambiar la contraseña: " + err.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen ">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="flex justify-center items-center py-12 px-4">
-        <div className="bg-white shadow-2xl rounded-2xl p-10 max-w-xl w-full space-y-8 border border-gray-200">
-          <h1 className="text-4xl font-bold text-center text-gray-800 tracking-tight">
+        <div className="bg-white shadow-xl rounded-2xl p-10 max-w-xl w-full space-y-10 border border-gray-200">
+          <h1 className="text-3xl font-bold text-center text-gray-800">
             Perfil del Usuario
           </h1>
 
+          {/* Información del usuario */}
           <section className="space-y-2 border-t pt-6">
-            <h2 className="text-2xl font-semibold text-gray-700">👤 Información personal</h2>
+            <h2 className="text-xl font-semibold text-gray-700">👤 Información personal</h2>
             {user ? (
               <>
-                <p className="text-gray-800"><span className="font-medium">Nombre:</span> {user.displayName || "No definido"}</p>
-                <p className="text-gray-800"><span className="font-medium">Correo:</span> {user.email}</p>
+                <p className="text-gray-700">
+                  <span className="font-medium">Nombre:</span>{" "}
+                  {user.displayName || <span className="italic text-gray-400">No definido</span>}
+                </p>
+                <p className="text-gray-700">
+                  <span className="font-medium">Correo:</span> {user.email}
+                </p>
               </>
             ) : (
               <p className="text-gray-500">Cargando información del usuario...</p>
             )}
           </section>
 
+          {/* Cambiar contraseña */}
           <section className="space-y-4 border-t pt-6">
-            <h2 className="text-2xl font-semibold text-gray-700">🔒 Cambiar contraseña</h2>
-
+            <h2 className="text-xl font-semibold text-gray-700">🔒 Cambiar contraseña</h2>
             <form onSubmit={handlePasswordChange} className="space-y-4">
-              <input
-                type="password"
-                placeholder="Contraseña actual"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                required
-                className="password"
-              />
-              <input
-                type="password"
-                placeholder="Nueva contraseña"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-                className="password"
-              />
-              <input
-                type="password"
-                placeholder="Confirmar nueva contraseña"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                className="password"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Contraseña actual
+                </label>
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  required
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
 
-              {error && <p className="text-red-600 text-sm font-medium">{error}</p>}
-              {message && <p className="text-green-600 text-sm font-medium">{message}</p>}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nueva contraseña
+                </label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirmar nueva contraseña
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {error && <p className="text-red-600 text-sm font-semibold">{error}</p>}
+              {message && <p className="text-green-600 text-sm font-semibold">{message}</p>}
 
               <button
                 type="submit"
@@ -121,8 +141,6 @@ const Profile = () => {
               </button>
             </form>
           </section>
-
-
         </div>
       </div>
     </div>

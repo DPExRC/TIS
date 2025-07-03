@@ -26,5 +26,10 @@ urlpatterns = [
     path("register/", RegisterView.as_view(), name="register"),
     path('animales/', include('animales.urls')),
     path('zonas/', include('zonas.urls')),
+    path('horarios/', include('horarios.urls')),
+    path('asignar/', include('asignarhorarios.urls')),
+    path('alertas/', include('alertas.urls')),
+    path('existencia/', include('existencia.urls')),
+
 
 ]

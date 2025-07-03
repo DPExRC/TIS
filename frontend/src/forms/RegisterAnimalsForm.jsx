@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
+import { QRCodeCanvas } from 'qrcode.react';
 import 'react-toastify/dist/ReactToastify.css';
 
 const RegisterAnimalsForm = () => {
@@ -13,6 +14,7 @@ const RegisterAnimalsForm = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const qrRef = useRef(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -33,12 +35,7 @@ const RegisterAnimalsForm = () => {
       </div>,
       {
         position: 'top-right',
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined
+        autoClose: 5000
       }
     );
   };
@@ -68,7 +65,7 @@ const RegisterAnimalsForm = () => {
         especie: '',
         animal: '',
         fecha_nacimiento: '',
-        codigo: ''
+        codigo: codigoGenerado // Mantenemos el código para mostrar QR
       });
 
       mostrarNotificacion(datosRegistrados);
@@ -78,6 +75,15 @@ const RegisterAnimalsForm = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const descargarQR = () => {
+    const canvas = qrRef.current.querySelector('canvas');
+    const pngUrl = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+    const link = document.createElement("a");
+    link.href = pngUrl;
+    link.download = `QR-${formData.codigo}.png`;
+    link.click();
   };
 
   return (
@@ -136,6 +142,28 @@ const RegisterAnimalsForm = () => {
           {isSubmitting ? 'Registrando...' : 'Registrar'}
         </button>
       </form>
+
+      {formData.codigo && (
+        <div className="mt-6 text-center">
+          <h3 className="text-lg font-semibold mb-2">Código QR</h3>
+          <div ref={qrRef} className="inline-block p-2 border rounded bg-white">
+            <QRCodeCanvas
+              value={formData.codigo}
+              size={200}
+              level={"H"}
+              includeMargin={true}
+            />
+          </div>
+          <p className="mt-2 text-sm text-gray-600">Código: <strong>{formData.codigo}</strong></p>
+
+          <button
+            className="mt-3 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            onClick={descargarQR}
+          >
+            Descargar QR
+          </button>
+        </div>
+      )}
     </div>
   );
 };
