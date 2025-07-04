@@ -1,4 +1,4 @@
-import base64
+
 from datetime import datetime
 
 from google.cloud import firestore
