@@ -38,3 +38,6 @@ rsa==4.9
 sqlparse==0.5.3
 uritemplate==4.1.1
 urllib3==2.3.0
+firebase-admin
+gunicorn
+whitenoise

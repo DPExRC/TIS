@@ -14,7 +14,6 @@ import CoutingPresence from './pages/CountingPresence';
 import RegisterAnimals from './pages/RegisterAnimals';
 import TotalAnimals from './pages/TotalAnimals';
 import Settings from './pages/settings';
-import ConteoPresenciaPage from './pages/Totalspecifico';
 import Horarios from './pages/Horarios';
 import BarcodeScanner from './pages/Barcodescanner';
 import Zones from './pages/Zones';
@@ -61,7 +60,6 @@ function App() {
         <Route path="/registroanimales" element={user ? <RegisterAnimals user={user} /> : <Navigate to="/" />} />
         <Route path="/totalanimales" element={user ? <TotalAnimals user={user} /> : <Navigate to="/" />} />
         <Route path="/settings" element={user ? <Settings user={user} /> : <Navigate to="/" />} />
-        <Route path="/totalespecifico" element={user ? <ConteoPresenciaPage user={user} /> : <Navigate to="/" />} />
         <Route path="/horarios" element={user ? <Horarios user={user} /> : <Navigate to="/" />} />
         <Route path="/scanner" element={user ? <BarcodeScanner user={user} /> : <Navigate to="/" />} />
         <Route path="/zonas" element={user ? <Zones user={user} /> : <Navigate to="/" />} />
