@@ -1,12 +1,12 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from firebase_admin import firestore
+from firebase_config import db, initialize_firebase
+initialize_firebase()
 from google.cloud.exceptions import GoogleCloudError
 from google.cloud.firestore_v1 import ArrayUnion
 
 
-db = firestore.client()
 
 
 class HorarioView(APIView):

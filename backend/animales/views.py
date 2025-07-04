@@ -1,6 +1,7 @@
 
 from datetime import datetime
-from google.cloud import firestore
+from firebase_config import db, initialize_firebase
+initialize_firebase()
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
@@ -42,7 +43,7 @@ class RegistrarAnimalAPIView(APIView):
 
     def generar_codigo_unico(self, especie):
         """Genera un código único basado en la especie"""
-        db = firestore.Client()
+        
         coleccion = db.collection('RegistroAnimales')
 
         # Consulta optimizada
@@ -66,7 +67,7 @@ class ListarAnimalesAPIView(APIView):
 
     def get(self, request):
         try:
-            db = firestore.Client()
+            
             docs = db.collection('RegistroAnimales').stream()
 
             animales = [doc.to_dict() for doc in docs]
@@ -103,7 +104,7 @@ def Editar(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        db = firestore.Client()
+        
         doc_ref = db.collection("RegistroAnimales").document(codigo)
         
         if not doc_ref.get().exists:
@@ -134,7 +135,7 @@ def Eliminar(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        db = firestore.Client()
+        
         doc_ref = db.collection("RegistroAnimales").document(codigo)
 
         if not doc_ref.get().exists:

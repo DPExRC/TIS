@@ -1,10 +1,10 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from firebase_admin import firestore
+from firebase_config import db, initialize_firebase
+initialize_firebase()
 from datetime import datetime
 
-db = firestore.client()
 
 class ExistenciaView(APIView):
     def get(self, request, id=None):

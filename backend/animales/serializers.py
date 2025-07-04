@@ -1,6 +1,9 @@
 from rest_framework import serializers
 from datetime import datetime
 from pytz import timezone
+from firebase_config import db, initialize_firebase
+initialize_firebase()
+
 
 class AnimalSerializer(serializers.Serializer):
     codigo = serializers.CharField(max_length=10)
@@ -12,7 +15,6 @@ class AnimalSerializer(serializers.Serializer):
         from google.cloud import firestore
         from pytz import timezone
 
-        db = firestore.Client()
         fecha_nac = validated_data['fecha_nacimiento']
 
         tz = timezone("America/Santiago")
