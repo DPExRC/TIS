@@ -26,6 +26,7 @@ httplib2==0.22.0
 idna==3.10
 msgpack==1.1.0
 packaging==25.0
+pillow==11.2.1
 proto-plus==1.26.1
 protobuf==5.29.4
 pyasn1==0.6.1
@@ -33,11 +34,11 @@ pyasn1_modules==0.4.2
 pycparser==2.22
 PyJWT==2.10.1
 pyparsing==3.2.3
+python-barcode==0.15.1
+pytz==2025.2
 requests==2.32.3
 rsa==4.9
 sqlparse==0.5.3
 uritemplate==4.1.1
 urllib3==2.3.0
-firebase-admin
-gunicorn
-whitenoise
+whitenoise==6.9.0
