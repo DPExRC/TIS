@@ -1,61 +1,90 @@
 import firebase_admin
 from firebase_admin import credentials, firestore
-import os
-import json
-from pathlib import Path
-from typing import Optional, Dict, Any
+from google.cloud.firestore_v1 import SERVER_TIMESTAMP  # Importación correcta
 import logging
+from django.conf import settings
+import os
 
-# Configura logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Variable global para la instancia de Firestore
-db = None
+# Variable global para el cliente de Firestore
+_db = None
+_initialized = False
 
-def initialize_firebase() -> bool:
-    """Inicializa Firebase Admin SDK y configura el cliente de Firestore
+def initialize_firebase():
+    """
+    Inicializa la conexión con Firebase y devuelve el cliente de Firestore.
+    """
+    global _db, _initialized
     
-    Returns:
-        bool: True si la inicialización fue exitosa, False en caso contrario
+    if _initialized:
+        return _db
+
+    try:
+        # Ruta al archivo de credenciales (configurable en settings.py)
+        cred_path = getattr(settings, 'FIREBASE_CREDENTIALS_PATH', 
+                         os.path.join(os.path.dirname(__file__), 'serviceAccountKey.json'))
+        
+        # Verificar si el archivo de credenciales existe
+        if not os.path.exists(cred_path):
+            raise FileNotFoundError(
+                f"No se encontró el archivo de credenciales de Firebase en {cred_path}"
+            )
+
+        # Inicializar la app de Firebase solo si no existe
+        if not firebase_admin._apps:
+            cred = credentials.Certificate(cred_path)
+            firebase_admin.initialize_app(cred)
+            logger.info("✅ Firebase inicializado correctamente")
+        
+        _db = firestore.client()
+        _initialized = True
+        return _db
+
+    except Exception as e:
+        logger.error(f"🔥 Error al inicializar Firebase: {str(e)}")
+        raise
+
+# Inicialización automática al importar el módulo
+try:
+    db = initialize_firebase()
+except Exception as e:
+    logger.error(f"🔥 Fallo en la inicialización automática: {str(e)}")
+    db = None
+
+
+def get_firestore_client():
+    """
+    Obtiene el cliente de Firestore (singleton).
+    Si no está inicializado, intenta inicializarlo.
     """
     global db
-    
+    if db is None:
+        db = initialize_firebase()
+    return db
+
+
+def test_connection():
+    """
+    Función para probar la conexión con Firestore
+    """
     try:
-        # Si ya está inicializado, no hacer nada
-        if firebase_admin._apps:
-            logger.info("Firebase ya estaba inicializado")
-            return True
-            
-        # Opción 1: Credenciales desde variables de entorno (producción)
-        if all(key in os.environ for key in ['FIREBASE_PROJECT_ID', 'FIREBASE_PRIVATE_KEY', 'FIREBASE_CLIENT_EMAIL']):
-            cred_dict = {
-                "type": "service_account",
-                "project_id": os.getenv('FIREBASE_PROJECT_ID'),
-                "private_key": (os.getenv('FIREBASE_PRIVATE_KEY') or '').replace('\\n', '\n'),
-                "client_email": os.getenv('FIREBASE_CLIENT_EMAIL'),
-                "token_uri": "https://oauth2.googleapis.com/token",
-            }
-            cred = credentials.Certificate(cred_dict)
+        client = get_firestore_client()
+        if client is None:
+            return False, "Cliente no inicializado"
         
-        # Opción 2: Credenciales desde archivo JSON (desarrollo local)
-        else:
-            json_path = Path(__file__).parent / 'serviceAccountKey.json'
-            if not json_path.exists():
-                logger.error("No se encontró archivo serviceAccountKey.json")
-                return False
-            cred = credentials.Certificate(json_path)
-
-        # Inicialización de Firebase
-        firebase_admin.initialize_app(cred)
-        db = firestore.client()
-        logger.info("✅ Firebase inicializado correctamente")
-        return True
+        # Prueba simple de lectura
+        test_ref = client.collection('TestConnection').document('test')
+        test_ref.set({
+            'test': True, 
+            'timestamp': SERVER_TIMESTAMP  # Usando la importación correcta
+        })
         
+        # Prueba de lectura
+        doc = test_ref.get()
+        if doc.exists:
+            return True, "Conexión exitosa"
+        return False, "No se pudo verificar la conexión"
+    
     except Exception as e:
-        logger.error(f"❌ Error inicializando Firebase: {str(e)}")
-        db = None
-        return False
-
-# Inicialización al importar el módulo
-initialize_firebase()
+        return False, str(e)
